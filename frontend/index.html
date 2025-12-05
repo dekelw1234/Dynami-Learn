@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynami-Learn | Educational Mode</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* צד ימין - שליטה */
+        aside { width: 340px; background: #0b1120; border-left: 1px solid #334155; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        h1 { margin: 0; color: var(--accent); font-size: 1.6rem; text-align: center; }
+
+        .section { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid #334155; position: relative; }
+        .section-title { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; font-weight: bold; }
+
+        /* שורת כותרת עם כפתור מידע */
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        label { font-size: 0.9rem; margin: 0; }
+
+        /* כפתור מידע (i) */
+        .info-btn {
+            background: transparent; border: 1px solid #64748b; color: #64748b;
+            width: 18px; height: 18px; border-radius: 50%; font-size: 11px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-family: serif; font-style: italic; transition: 0.2s;
+        }
+        .info-btn:hover { border-color: var(--info); color: var(--info); }
+
+        /* תיבת הסבר נפתחת */
+        .info-box {
+            display: none; /* מוסתר ברירת מחדל */
+            background: #334155; color: #e2e8f0;
+            padding: 10px; border-radius: 4px; margin-bottom: 10px;
+            font-size: 0.85rem; line-height: 1.4; border-right: 3px solid var(--info);
+            position: relative; animation: fadeIn 0.3s;
+        }
+        .info-box .close-x {
+            position: absolute; top: 2px; left: 5px; cursor: pointer; color: #94a3b8; font-size: 12px;
+        }
+        .info-box .close-x:hover { color: white; }
+
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* שדות קלט */
+        input[type="range"], select { width: 100%; background: #334155; color: white; border: none; padding: 5px; border-radius: 4px; accent-color: var(--accent); }
+        input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* כפתורים ראשיים */
+        button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        .btn-calc { background: var(--accent); color: #000; }
+        .btn-calc:hover { background: #fff; }
+        .btn-sim { background: var(--danger); color: #fff; }
+        .btn-sim:hover { background: #dc2626; }
+        .btn-sim.running { background: #64748b; }
+
+        main { flex: 1; padding: 15px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 60% 40%; gap: 15px; }
+
+        .card { background: var(--panel); border: 1px solid #334155; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .card-header { background: rgba(0,0,0,0.3); padding: 8px 15px; font-size: 0.9rem; color: #94a3b8; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .card-body { flex: 1; position: relative; overflow: auto; padding: 10px; }
+
+        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; }
+        .mat-row { display: flex; gap: 10px; justify-content: center; }
+
+        #vizCanvas { width: 100%; height: 100%; display: block; background: #000; }
+
+        .graph-controls select { width: auto; padding: 2px 10px; font-size: 0.8rem; background: #0f172a; border: 1px solid #334155; }
+    </style>
+</head>
+<body>
+
+<aside>
+    <h1>Dynami-Learn</h1>
+
+    <div class="section">
+        <div class="section-title">1. הגדרת מבנה</div>
+
+        <div class="label-row">
+            <label>מספר קומות (DOFs):</label>
+            <button class="info-btn" onclick="toggleInfo('info-dof')">i</button>
+        </div>
+        <div id="info-dof" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-dof')">✕</span>
+            <strong>דרגות חופש (Degrees of Freedom):</strong><br>
+            קובע כמה קומות (מסות) יש למבנה.
+            <br>• 1: מטוטלת פשוטה (תדר אחד).
+            <br>• 2-3: מבנה רב קומות (מספר תדרים טבעיים).
+        </div>
+
+        <select id="dof-select" onchange="onDofChange()">
+            <option value="1">1 (SDOF)</option>
+            <option value="2" selected>2 (2DOF)</option>
+            <option value="3">3 (3DOF)</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. מאפיינים פיזיקליים</div>
+
+        <div class="label-row">
+            <label>מודול אלסטיות (E): <span id="v-E">30</span> GPa</label>
+            <button class="info-btn" onclick="toggleInfo('info-E')">i</button>
+        </div>
+        <div id="info-E" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-E')">✕</span>
+            <strong>קשיחות החומר:</strong><br>
+            מתאר כמה החומר "חזק" וקשה לכיפוף.
+            <br>• E גבוה (כמו פלדה) -> מבנה קשיח -> תדר גבוה.
+            <br>• E נמוך -> מבנה גמיש -> תדר נמוך.
+        </div>
+        <input type="range" id="i-E" min="10" max="50" value="30" oninput="updateUI()">
+
+        <div class="label-row">
+            <label>עומס רצפה (Mass): <span id="v-M">20</span> kN/m²</label>
+            <button class="info-btn" onclick="toggleInfo('info-M')">i</button>
+        </div>
+        <div id="info-M" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-M')">✕</span>
+            <strong>מסת המבנה:</strong><br>
+            המשקל שמונח על כל קומה.
+            <br>• מסה גדולה -> אינרציה גבוהה -> תדר נמוך (זז לאט).
+            <br>• מסה קטנה -> תדר גבוה (זז מהר).
+        </div>
+        <input type="range" id="i-M" min="10" max="100" value="20" oninput="updateUI()">
+
+        <div class="label-row">
+            <label>מומנט אינרציה (Ic): <span id="v-I">0.005</span> m⁴</label>
+            <button class="info-btn" onclick="toggleInfo('info-I')">i</button>
+        </div>
+        <div id="info-I" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-I')">✕</span>
+            <strong>חתך העמוד:</strong><br>
+            מתאר את הגיאומטריה ועובי העמודים.
+            <br>עמוד עבה יותר (Ic גדול) מקשה על הכיפוף ומעלה את הקשיחות של המבנה.
+        </div>
+        <input type="range" id="i-I" min="0.001" max="0.02" step="0.001" value="0.005" oninput="updateUI()">
+    </div>
+
+    <button class="action-btn btn-calc" id="btn-calc" onclick="calculateSystem()">🔄 חשב מודים ומטריצות</button>
+
+    <div class="section" style="margin-top:auto;">
+        <div class="section-title">3. סימולציה</div>
+
+        <div class="label-row">
+            <label>תדר הכוח (Hz): <span id="v-F">2.0</span></label>
+            <button class="info-btn" onclick="toggleInfo('info-F')">i</button>
+        </div>
+        <div id="info-F" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-F')">✕</span>
+            <strong>הכוח המאלץ:</strong><br>
+            באיזה קצב אנחנו מנדנדים את המבנה?
+            <br>• תדר כוח = תדר טבעי -> <strong>תהודה (Resonance)!</strong> המבנה ישתולל.
+            <br>• תדר כוח רחוק -> תגובה מתונה.
+        </div>
+        <input type="range" id="i-F" min="0.1" max="5.0" step="0.1" value="2.0" oninput="updateUI()">
+
+        <button class="action-btn btn-sim" id="btn-sim" onclick="toggleSimulation()">🌊 הפעל רעידה</button>
+    </div>
+</aside>
+
+<main>
+    <div class="card">
+        <div class="card-header">ויזואליזציה של השלד (Visualizer)</div>
+        <div class="card-body" style="padding:0; background:#000;">
+            <canvas id="vizCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">מטריצות ומודים (Modes & Matrices)</div>
+        <div class="card-body matrix-container" id="results-area">
+            בחר מספר קומות ופרמטרים, ואז לחץ "חשב מודים".
+        </div>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <span>גרף תגובה בזמן (Time History)</span>
+            <div class="graph-controls">
+                <label style="display:inline; margin:0;">הצג:</label>
+                <select id="graph-type" onchange="updateGraphView()">
+                    <option value="x">תזוזה (x)</option>
+                    <option value="v">מהירות (ẋ)</option>
+                    <option value="a">תאוצה (ẍ)</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <canvas id="graphCanvas"></canvas>
+        </div>
+    </div>
+</main>
+
+<script>
+    const API = "http://127.0.0.1:8000";
+    let chart = null;
+    let animId = null;
+    let isRunning = false;
+    let lastSimData = null;
+
+    // --- מנגנון המידע (Info Toggle) ---
+    function toggleInfo(id) {
+        const el = document.getElementById(id);
+        const isVisible = el.style.display === 'block';
+
+        // סגור את כולם קודם
+        document.querySelectorAll('.info-box').forEach(box => box.style.display = 'none');
+
+        // אם לא היה פתוח, פתח את הנוכחי
+        if (!isVisible) {
+            el.style.display = 'block';
+        }
+    }
+
+    function updateUI() {
+        ['E','M','I','F'].forEach(k => document.getElementById('v-'+k).innerText = document.getElementById('i-'+k).value);
+    }
+
+    function onDofChange() {
+        document.getElementById("results-area").innerText = "הגדרות שונו. לחץ חשב מחדש.";
+        if (chart) chart.destroy();
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        drawFrame(new Array(dofs).fill(0));
+    }
+
+    function toggleSimulation() {
+        const btn = document.getElementById("btn-sim");
+        if (isRunning) {
+            stopSimulation();
+            btn.innerText = "🌊 הפעל רעידה";
+            btn.classList.remove("running");
+            toggleInputs(false);
+        } else {
+            runSimulation();
+            btn.innerText = "⏹ עצור סימולציה";
+            btn.classList.add("running");
+            toggleInputs(true);
+        }
+        isRunning = !isRunning;
+    }
+
+    function stopSimulation() {
+        if(animId) cancelAnimationFrame(animId);
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        drawFrame(new Array(dofs).fill(0));
+    }
+
+    function toggleInputs(locked) {
+        const ids = ["dof-select", "i-E", "i-M", "i-I", "i-F", "btn-calc"];
+        ids.forEach(id => document.getElementById(id).disabled = locked);
+    }
+
+    function getPayload() {
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        const E = parseFloat(document.getElementById("i-E").value);
+        const M = parseFloat(document.getElementById("i-M").value);
+        const I = parseFloat(document.getElementById("i-I").value);
+        const arr = (v) => Array(dofs).fill().map(() => Array(2).fill(v));
+        return {
+            "Hc": arr(3.0), "Ec": arr(E), "Ic": arr(I), "Lb": arr(6.0),
+            "depth": 6.0, "floor_load": M, "base_condition": 1
+        };
+    }
+
+    async function calculateSystem() {
+        try {
+            const payload = getPayload();
+            const res = await fetch(`${API}/shear-building/modal`, {
+                method: "POST", headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            displayMatrices(data);
+            drawFrame(new Array(data.dofs).fill(0));
+        } catch (e) {
+            console.error(e);
+            alert("שגיאת חישוב (האם השרת רץ?)");
+        }
+    }
+
+    function displayMatrices(data) {
+        const div = document.getElementById("results-area");
+        let freqs = data.frequencies.map(f => (f/(2*Math.PI)).toFixed(2) + " Hz").join(", ");
+        let html = `<div><strong>תדרים עצמיים (Modes):</strong> [ ${freqs} ]</div><br>`;
+        html += `<div><strong>מטריצת מסה [M]:</strong></div>`;
+        data.M_matrix.forEach(row => html += `<div class="mat-row">[ ${row.map(n => (n/1000).toFixed(1)).join(", ")} ]</div>`);
+        html += `<br><div><strong>מטריצת קשיחות [K]:</strong></div>`;
+        data.K_matrix.forEach(row => html += `<div class="mat-row">[ ${row.map(n => (n/1000).toFixed(0)).join(", ")} ]</div>`);
+        div.innerHTML = html;
+    }
+
+    async function runSimulation() {
+        const freq = parseFloat(document.getElementById("i-F").value);
+        const payload = {
+            model_req: getPayload(),
+            sim_req: {
+                "t0": 0, "tf": 10, "dt": 0.02,
+                "force_function": { "amp": 200, "freq": freq * 2 * Math.PI }
+            }
+        };
+
+        try {
+            const res = await fetch(`${API}/shear-building/simulate`, {
+                method: "POST", headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+
+            lastSimData = data;
+            updateGraphView();
+            startAnimation(data);
+
+        } catch (e) {
+            alert("שגיאה בסימולציה: " + e.message);
+            toggleSimulation();
+        }
+    }
+
+    function updateGraphView() {
+        if (!lastSimData) return;
+        const type = document.getElementById("graph-type").value;
+        const ctx = document.getElementById("graphCanvas").getContext("2d");
+        if(chart) chart.destroy();
+
+        let dataset, label, color;
+        if (type === 'x') { dataset = lastSimData.x; label = "תזוזה (m)"; color = "#3b82f6"; }
+        else if (type === 'v') { dataset = lastSimData.v; label = "מהירות (m/s)"; color = "#10b981"; }
+        else { dataset = lastSimData.a; label = "תאוצה (m/s²)"; color = "#f59e0b"; }
+
+        const roofData = dataset[dataset.length-1];
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: lastSimData.t.map(t=>t.toFixed(2)),
+                datasets: [{label: label, data: roofData, borderColor: color, borderWidth:1.5, pointRadius:0}]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    x: { ticks: {display: false}, grid: {color:'#333'} },
+                    y: { grid: {color:'#333'} }
+                },
+                plugins: { legend: {labels:{color:'#ccc'}} }
+            }
+        });
+    }
+
+    function drawFrame(disps) {
+        const cvs = document.getElementById("vizCanvas");
+        const ctx = cvs.getContext("2d");
+        const rect = cvs.parentElement.getBoundingClientRect();
+        cvs.width = rect.width; cvs.height = rect.height;
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0,0,cvs.width,cvs.height);
+
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        if (!disps || disps.length !== dofs) disps = new Array(dofs).fill(0);
+
+        const scale = 2000;
+        const cx = cvs.width / 2;
+        const groundY = cvs.height - 30;
+        const floorH = (cvs.height * 0.7) / (dofs || 1);
+        const width = 200;
+
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        for (let i = 0; i < dofs; i++) {
+            const yBot = groundY - (i * floorH);
+            const yTop = groundY - ((i + 1) * floorH);
+            const dBot = (i===0) ? 0 : disps[i-1] * scale;
+            const dTop = disps[i] * scale;
+            const xBot = cx + dBot;
+            const xTop = cx + dTop;
+
+            ctx.strokeStyle = "#38bdf8";
+            ctx.beginPath(); ctx.moveTo(xBot - width/2, yBot); ctx.lineTo(xTop - width/2, yTop); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(xBot + width/2, yBot); ctx.lineTo(xTop + width/2, yTop); ctx.stroke();
+
+            ctx.strokeStyle = "white";
+            ctx.beginPath(); ctx.moveTo(xTop - width/2, yTop); ctx.lineTo(xTop + width/2, yTop); ctx.stroke();
+
+            ctx.fillStyle = "#ef4444";
+            ctx.beginPath(); ctx.arc(xTop, yTop, 8, 0, 2*Math.PI); ctx.fill();
+
+            ctx.fillStyle = "#aaa"; ctx.font="12px sans-serif";
+            ctx.fillText("M"+(i+1), xTop+10, yTop-10);
+        }
+
+        ctx.strokeStyle = "#666"; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(cx - 150, groundY); ctx.lineTo(cx + 150, groundY); ctx.stroke();
+    }
+
+    function startAnimation(data) {
+        if(animId) cancelAnimationFrame(animId);
+        let frame = 0;
+        function loop() {
+            if (!isRunning) return;
+            if (frame >= data.t.length) { frame = 0; }
+            const currentDisps = [];
+            for(let i=0; i<data.x.length; i++) currentDisps.push(data.x[i][frame]);
+            drawFrame(currentDisps);
+            frame++;
+            animId = requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
+    window.onload = () => { ui(); onDofChange(); };
+    window.onresize = () => {
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        drawFrame(new Array(dofs).fill(0));
+    };
+</script>
+</body>
+</html>
