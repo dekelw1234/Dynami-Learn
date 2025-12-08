@@ -5,20 +5,24 @@
     <title>Dynami-Learn | Professional</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; }
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; --success: #10b981; }
 
-        /* שינוי כיוון לשמאל-ימין עבור אנגלית */
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; direction: ltr; }
 
-        /* צד שמאל - שליטה */
-        aside { width: 340px; background: #0b1120; border-right: 1px solid #334155; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        /* Sidebar FIX: Reduced scrolling and removed space */
+        aside {
+            width: 360px; background: #0b1120; border-right: 1px solid #334155;
+            padding: 8px; /* Reduced */
+            display: flex; flex-direction: column;
+            gap: 6px; /* Reduced */
+            overflow-y: hidden; /* CRITICAL FIX: No Scrolling */
+        }
         h1 { margin: 0; color: var(--accent); font-size: 1.6rem; text-align: center; letter-spacing: 1px; }
 
-        .section { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid #334155; }
-        .section-title { font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .section { background: var(--panel); padding: 8px; border-radius: 8px; border: 1px solid #334155; position: relative; } /* Reduced padding */
+        .section-title { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; border-bottom: 1px solid #334155; padding-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* שורות כותרת עם כפתור מידע */
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; } /* Reduced margin */
         label { font-size: 0.9rem; margin: 0; }
 
         .info-btn {
@@ -26,40 +30,35 @@
             width: 16px; height: 16px; border-radius: 50%; font-size: 10px;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             font-family: serif; font-style: italic; transition: 0.2s;
+            margin-right: 0;
         }
-        .info-btn:hover { border-color: var(--info); color: var(--info); }
 
+        /* Popover Styling */
         .info-box {
-            display: none; background: #334155; color: #e2e8f0;
-            padding: 10px; border-radius: 4px; margin-bottom: 10px;
-            font-size: 0.8rem; line-height: 1.4; border-left: 3px solid var(--info);
-            position: relative; animation: fadeIn 0.3s;
+            display: none; position: absolute; top: 26px; left: 5px; width: 300px; background: #334155; color: #e2e8f0;
+            padding: 10px; border-radius: 4px; font-size: 0.8rem; line-height: 1.4; border-left: 3px solid var(--info);
+            z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.5); animation: fadeIn 0.3s;
         }
-        .info-box strong { color: var(--info); }
-        .info-box .close-x { position: absolute; top: 2px; right: 5px; cursor: pointer; color: #94a3b8; }
 
-        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+        /* Input Group Styling */
+        .input-group { display: flex; gap: 8px; align-items: center; }
 
-        /* Inputs */
-        input[type="range"], select { width: 100%; background: #334155; color: white; border: none; padding: 5px; border-radius: 4px; accent-color: var(--accent); }
-        input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="range"] { flex: 1; background: #334155; height: 6px; border-radius: 3px; appearance: none; cursor: pointer; }
+        input[type="number"] {
+            width: 70px; background: #0f172a; color: var(--accent); border: 1px solid #334155;
+            padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; font-family: monospace;
+        }
 
-        /* Buttons */
-        button.action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; text-transform: uppercase; font-size: 0.85rem; }
-        .btn-calc { background: var(--accent); color: #000; }
-        .btn-calc:hover { background: #fff; }
-        .btn-sim { background: var(--danger); color: #fff; }
-        .btn-sim:hover { background: #dc2626; }
-        .btn-sim.running { background: #64748b; cursor: default; }
+        button.action-btn { width: 100%; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 3px; transition: 0.2s; text-transform: uppercase; font-size: 0.85rem; }
 
-        /* Credit */
         .credit-footer {
-            margin-top: auto; padding-top: 20px; text-align: center;
+            margin-top: auto; padding-top: 5px;
             font-size: 0.75rem; color: #64748b; font-family: monospace;
             border-top: 1px solid #1e293b; line-height: 1.5;
         }
 
-        /* Main Area */
+        .calc-val-display { font-family: monospace; color: var(--accent); font-weight: bold; }
+
         main { flex: 1; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 60% 40%; gap: 15px; }
 
         .card { background: var(--panel); border: 1px solid #334155; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
@@ -67,22 +66,16 @@
         .card-body { flex: 1; position: relative; overflow: auto; padding: 10px; }
 
         .matrix-container { font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; }
-        .mat-row { display: flex; gap: 10px; justify-content: center; }
 
-        #vizCanvas { width: 100%; height: 100%; display: block; background: #000; }
+        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .modes-table th { text-align: left; border-bottom: 1px solid #475569; padding: 5px; color: #94a3b8; font-size: 0.8rem; }
+        .modes-table td { padding: 5px; border-bottom: 1px solid #334155; }
 
-        /* Custom Legend Styling */
-        .custom-legend { display: flex; gap: 15px; align-items: center; }
-        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; user-select: none; text-transform: none; color: #ccc; }
-        .legend-item input[type="checkbox"] {
-            width: 14px; height: 14px; cursor: pointer; margin: 0; appearance: none;
-            border: 2px solid currentColor; border-radius: 3px; display: grid; place-content: center;
+        .mat-row {
+            display: flex; gap: 10px; justify-content: center;
+            white-space: nowrap;
+            overflow-x: auto;
         }
-        .legend-item input[type="checkbox"]::before {
-            content: ""; width: 8px; height: 8px; transform: scale(0);
-            transition: 100ms transform ease-in-out; box-shadow: inset 1em 1em currentColor;
-        }
-        .legend-item input[type="checkbox"]:checked::before { transform: scale(1); }
     </style>
 </head>
 <body>
@@ -92,19 +85,14 @@
 
     <div class="section">
         <div class="section-title">1. Structure Config</div>
-
         <div class="label-row">
             <label>Stories (DOFs):</label>
             <button class="info-btn" onclick="toggleInfo('info-dof')">i</button>
         </div>
         <div id="info-dof" class="info-box">
             <span class="close-x" onclick="toggleInfo('info-dof')">✕</span>
-            <strong>Degrees of Freedom:</strong><br>
-            Determines the number of masses (floors).
-            <br>• 1: SDOF System (Single frequency).
-            <br>• 2-3: MDOF System (Multiple mode shapes).
+            <strong>Degrees of Freedom:</strong><br>Number of floors (masses).<br>• 1: SDOF System.<br>• 2-3: MDOF System.
         </div>
-
         <select id="dof-select" onchange="onDofChange()">
             <option value="1">1 Story (SDOF)</option>
             <option value="2" selected>2 Stories (2DOF)</option>
@@ -116,62 +104,131 @@
         <div class="section-title">2. Physical Properties</div>
 
         <div class="label-row">
-            <label>Elastic Modulus (E): <span id="v-E">30</span> GPa</label>
+            <label>Elastic Modulus (E) [GPa]:</label>
             <button class="info-btn" onclick="toggleInfo('info-E')">i</button>
         </div>
         <div id="info-E" class="info-box">
             <span class="close-x" onclick="toggleInfo('info-E')">✕</span>
-            <strong>Stiffness (E):</strong><br>
-            Represents the material strength.
-            <br>• High E (e.g. Steel) -> Stiff structure -> High Frequency.
-            <br>• Low E -> Flexible structure -> Low Frequency.
+            <strong>Stiffness (E):</strong> Material strength.<br>
+            • Max E (50 GPa) is enforced for stability.
         </div>
-        <input type="range" id="i-E" min="10" max="50" value="30" oninput="updateUI()">
+        <div class="input-group">
+            <input type="range" id="slide-E" min="10" max="50" value="30" oninput="syncInputs('E', true)">
+            <input type="number" id="num-E" value="30" min="1" step="1" max="50" oninput="syncInputs('E', false)" onchange="clampAndResync('E')">
+        </div>
 
-        <div class="label-row">
-            <label>Floor Load (Mass): <span id="v-M">20</span> kN/m²</label>
+        <div class="label-row" style="margin-top:8px;">
+            <label>Floor Load (Mass) [kN/m²]:</label>
             <button class="info-btn" onclick="toggleInfo('info-M')">i</button>
         </div>
         <div id="info-M" class="info-box">
             <span class="close-x" onclick="toggleInfo('info-M')">✕</span>
-            <strong>Mass:</strong><br>
-            The weight placed on each floor.
-            <br>• High Mass -> High Inertia -> Low Frequency.
-            <br>• Low Mass -> High Frequency.
+            <strong>Mass:</strong> Weight on each floor. Max 100 kN/m² enforced.
         </div>
-        <input type="range" id="i-M" min="10" max="100" value="20" oninput="updateUI()">
+        <div class="input-group">
+            <input type="range" id="slide-M" min="10" max="100" value="20" oninput="syncInputs('M', true)">
+            <input type="number" id="num-M" value="20" min="1" step="1" max="100" oninput="syncInputs('M', false)" onchange="clampAndResync('M')">
+        </div>
 
-        <div class="label-row">
-            <label>Inertia (Ic): <span id="v-I">0.005</span> m⁴</label>
-            <button class="info-btn" onclick="toggleInfo('info-I')">i</button>
+        <div style="border-top:1px dashed #334155; margin-top:10px; padding-top:8px;">
+            <div class="label-row">
+                <label>Column Profile:</label>
+                <select id="profile-type" onchange="updateProfileType()">
+                    <option value="circle">Circular</option>
+                    <option value="rect">Rectangular</option>
+                </select>
+            </div>
+
+            <div id="input-circle">
+                <div class="label-row" style="margin-top:5px;">
+                    <label>Radius (r) [m]:</label>
+                </div>
+                <div class="input-group">
+                    <input type="range" id="slide-r" min="0.1" max="0.6" step="0.01" value="0.25" oninput="syncGeometry('r', true)">
+                    <input type="number" id="num-r" value="0.25" min="0.01" step="0.01" max="0.6" oninput="syncGeometry('r', false)" onchange="clampAndResync('r', 0.01, true)">
+                </div>
+            </div>
+
+            <div id="input-rect" style="display:none;">
+                <div class="label-row" style="margin-top:5px;">
+                    <label>Width (b) [m]:</label>
+                </div>
+                <div class="input-group">
+                    <input type="range" id="slide-b" min="0.2" max="1.0" step="0.05" value="0.4" oninput="syncGeometry('b', true)">
+                    <input type="number" id="num-b" value="0.4" min="0.01" step="0.05" max="1.0" oninput="syncGeometry('b', false)" onchange="clampAndResync('b', 0.01, true)">
+                </div>
+                <div class="label-row" style="margin-top:5px;">
+                    <label>Height (h) [m]:</label>
+                </div>
+                <div class="input-group">
+                    <input type="range" id="slide-h" min="0.2" max="1.0" step="0.05" value="0.4" oninput="syncGeometry('h', true)">
+                    <input type="number" id="num-h" value="0.4" min="0.01" step="0.05" max="1.0" oninput="syncGeometry('h', false)" onchange="clampAndResync('h', 0.01, true)">
+                </div>
+            </div>
+
+            <div style="margin-top:5px; font-size:0.8rem; color:#94a3b8;">
+                Calculated Inertia (Ic): <span id="v-Ic" class="calc-val-display">0.003068</span> m⁴
+            </div>
         </div>
-        <div id="info-I" class="info-box">
-            <span class="close-x" onclick="toggleInfo('info-I')">✕</span>
-            <strong>Moment of Inertia:</strong><br>
-            Geometric property of the column cross-section.
-            <br>Thicker columns (High Ic) increase stiffness.
-        </div>
-        <input type="range" id="i-I" min="0.001" max="0.02" step="0.001" value="0.005" oninput="updateUI()">
     </div>
 
-    <button class="action-btn btn-calc" id="btn-calc" onclick="calculateSystem()">🔄 Calculate Matrices</button>
+    <div class="section">
+        <div class="section-title">3. Damping Ratios (ζ)</div>
+        <div class="label-row">
+            <label>Modal Damping (0 to 1):</label>
+            <button class="info-btn" onclick="toggleInfo('info-zeta')">i</button>
+        </div>
+        <div id="info-zeta" class="info-box">
+            <span class="close-x" onclick="toggleInfo('info-zeta')">✕</span>
+            <strong>Damping Ratio (Zeta):</strong><br>
+            Zeta (ζ) controls energy dissipation.<br>
+            • Used in Caughey Damping calculation.<br>
+            • 0.02 is typical for concrete structures. Max value of 1.0 enforced.
+        </div>
+        <div id="damping-inputs-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <button class="action-btn btn-calc" id="btn-calc" onclick="calculateSystem()">Calculate Matrices</button>
 
     <div class="section" style="margin-top:auto;">
-        <div class="section-title">3. Simulation</div>
+        <div class="section-title">4. Simulation</div>
 
         <div class="label-row">
-            <label>Force Freq (Hz): <span id="v-F">2.0</span></label>
+            <label>Force Type:</label>
+            <select id="force-type" onchange="toggleDurationInput()">
+                <option value="continuous">Continuous Loop (Resonance)</option>
+                <option value="pulse">Pulse / Earthquake (Decay)</option>
+            </select>
+        </div>
+
+        <div id="duration-input-container" style="display:none; margin-bottom:5px;">
+            <div class="label-row">
+                <label>Pulse Duration (s):</label>
+            </div>
+            <div class="input-group">
+                <input type="range" id="slide-dur" min="1" max="30" value="15" oninput="syncInputs('dur', true)">
+                <input type="number" id="num-dur" value="15" min="1" max="50" oninput="syncInputs('dur', false)" onchange="clampAndResync('dur')">
+            </div>
+        </div>
+
+        <div class="label-row">
+            <label>
+                Force Freq (Hz):
+                <span id="val-omega" style="color:#f59e0b; font-size:0.75rem; margin-left:5px;"></span>
+            </label>
             <button class="info-btn" onclick="toggleInfo('info-F')">i</button>
         </div>
         <div id="info-F" class="info-box">
             <span class="close-x" onclick="toggleInfo('info-F')">✕</span>
-            <strong>Forcing Frequency:</strong><br>
-            The rate at which the external force oscillates.
-            <br>• Match Natural Freq -> <strong>Resonance!</strong>
+            <strong>Forcing Freq:</strong> External force oscillation rate.<br>
+            Adjust to match natural frequency to observe resonance effects.
         </div>
-        <input type="range" id="i-F" min="0.1" max="5.0" step="0.1" value="2.0" oninput="updateUI()">
+        <div class="input-group">
+            <input type="range" id="slide-F" min="0.1" max="10.0" step="0.1" value="2.0" oninput="syncInputs('F', true)">
+            <input type="number" id="num-F" value="2.0" min="0.1" step="0.1" max="10.0" oninput="syncInputs('F', false)" onchange="clampAndResync('F')">
+        </div>
 
-        <button class="action-btn btn-sim" id="btn-sim" onclick="toggleSimulation()">🌊 Start Earthquake</button>
+        <button class="action-btn btn-sim" id="btn-sim" onclick="toggleSimulation()">Start Earthquake</button>
     </div>
 
     <div class="credit-footer">
@@ -182,24 +239,37 @@
 
 <main>
     <div class="card">
-        <div class="card-header">Structure Visualizer</div>
+        <div class="card-header">
+            <span style="font-weight:600; text-transform:uppercase;">Visualizer</span>
+        </div>
         <div class="card-body" style="padding:0; background:#000;">
             <canvas id="vizCanvas"></canvas>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Modes & Matrices</div>
+        <div class="card-header">
+            <span>System Properties</span>
+        </div>
         <div class="card-body matrix-container" id="results-area">
-            Select parameters and click "Calculate Matrices".
+            Loading system...
         </div>
     </div>
 
     <div class="card" style="grid-column: span 2;">
         <div class="card-header">
-            <span>Time History Response</span>
+            <div class="graph-tools">
+                <span>Time History Response</span>
 
-            <div class="custom-legend">
+                <div class="filter-box">
+                    <label style="font-size:0.75rem; color:#888;">Decomposition:</label>
+                    <select id="mode-filter" onchange="applyModeFilter()">
+                        <option value="total">Total Response (Norm by T1)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="legend-row">
                 <label class="legend-item" style="color: #3b82f6;">
                     <input type="checkbox" id="chk-x" checked onchange="toggleGraph(0)"> Displacement (m)
                 </label>
@@ -223,8 +293,53 @@
     let animId = null;
     let isRunning = false;
     let lastSimData = null;
+    let visualScaleFactor = 1.0;
 
-    // --- Info Box Logic ---
+    let systemPeriods = [];
+    let calculatedIc = 0.005;
+    let currentNormT = 1.0;
+    let currentCursorTime = 0;
+
+    let quakeDuration = null;
+    let forceType = "continuous";
+
+    const WINDOW_SIZE = 25;
+
+    const cursorPlugin = {
+        id: 'cursor',
+        afterDatasetsDraw(chart, args, options) {
+            const { ctx, chartArea: { top, bottom, left, right }, scales: { x, y } } = chart;
+
+            if (lastSimData && forceType === 'pulse' && quakeDuration) {
+                const endVal = quakeDuration / currentNormT;
+                if (endVal >= x.min && endVal <= x.max) {
+                    const xEnd = x.getPixelForValue(endVal);
+                    ctx.save();
+                    ctx.beginPath(); ctx.moveTo(xEnd, top); ctx.lineTo(xEnd, bottom);
+                    ctx.lineWidth = 2; ctx.strokeStyle = '#10b981';
+                    ctx.setLineDash([10, 5]); ctx.stroke();
+
+                    ctx.fillStyle = '#10b981'; ctx.font = '10px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText("Quake End", xEnd + 5, top + 15);
+                    ctx.restore();
+                }
+            }
+
+            if (currentCursorTime !== null && isRunning) {
+                const val = currentCursorTime / currentNormT;
+                if (val >= x.min && val <= x.max) {
+                    const xPos = x.getPixelForValue(val);
+                    ctx.save();
+                    ctx.beginPath(); ctx.moveTo(xPos, top); ctx.lineTo(xPos, bottom);
+                    ctx.lineWidth = 2; ctx.strokeStyle = '#ef4444';
+                    ctx.setLineDash([5, 5]); ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }
+    };
+    Chart.register(cursorPlugin);
+
     function toggleInfo(id) {
         const el = document.getElementById(id);
         const isVisible = el.style.display === 'block';
@@ -232,8 +347,169 @@
         if (!isVisible) el.style.display = 'block';
     }
 
-    function updateUI() {
-        ['E','M','I','F'].forEach(k => document.getElementById('v-'+k).innerText = document.getElementById('i-'+k).value);
+    function toggleDurationInput() {
+        const type = document.getElementById("force-type").value;
+        document.getElementById("duration-input-container").style.display = (type === "pulse") ? "block" : "none";
+    }
+
+    // --- NEW CORE CLAMPING FUNCTION (Runs ONCHANGE) ---
+    function clampAndResync(key, minVal = 0.1, isGeometry = false) {
+        let numId, slideId;
+
+        if (isGeometry) {
+            numId = `num-${key}`;
+            slideId = `slide-${key}`;
+        } else {
+            numId = `num-${key}`;
+            slideId = `slide-${key}`;
+        }
+
+        const numInput = document.getElementById(numId);
+        const slider = document.getElementById(slideId);
+        const inputStr = numInput.value;
+
+        // Get max/min from HTML attributes
+        const maxVal = parseFloat(slider.max) || 100;
+        const minValNum = parseFloat(slider.min) || minVal;
+
+        let val = parseFloat(inputStr);
+
+        // 1. Numerical clamping
+        if (isNaN(val) || val < minValNum) {
+            val = minValNum;
+        }
+        if (val > maxVal) {
+            val = maxVal;
+        }
+
+        // 2. Update both elements with the final clamped value
+        numInput.value = val;
+        slider.value = val;
+
+        // 3. Trigger secondary updates
+        if (isGeometry) {
+            updateGeometry();
+        } else if (key === 'F') {
+            const w = 2 * Math.PI * val;
+            document.getElementById('val-omega').innerText = `(ω = ${w.toFixed(2)} rad/s)`;
+        }
+    }
+
+    // --- OnInput handlers (for smooth typing/slider sync only) ---
+    function syncInputs(key, isSlider) {
+        const slider = document.getElementById('slide-' + key);
+        const number = document.getElementById('num-' + key);
+
+        if (isSlider) {
+            number.value = slider.value;
+        } else {
+            // Allow typing: only sync slider position if it's a valid number, otherwise ignore.
+            const val = parseFloat(number.value);
+            if (!isNaN(val)) slider.value = val;
+        }
+
+        if (key === 'F') {
+            const f = parseFloat(number.value) || 0;
+            const w = 2 * Math.PI * f;
+            document.getElementById('val-omega').innerText = `(ω = ${w.toFixed(2)} rad/s)`;
+        }
+    }
+
+    function syncGeometry(key, isSlider) {
+        const slider = document.getElementById('slide-' + key);
+        const number = document.getElementById('num-' + key);
+
+        if (isSlider) {
+            number.value = slider.value;
+        } else {
+            const val = parseFloat(number.value);
+            if (!isNaN(val)) slider.value = val;
+        }
+    }
+
+    function updateProfileType() {
+        const type = document.getElementById("profile-type").value;
+        document.getElementById("input-circle").style.display = (type === "circle") ? "block" : "none";
+        document.getElementById("input-rect").style.display = (type === "rect") ? "block" : "none";
+        clampAndResync('r', 0.01, true); // Recalculate Ic immediately after profile change
+    }
+
+    function updateGeometry() {
+        const type = document.getElementById("profile-type").value;
+        let I = 0;
+        if (type === "circle") {
+            const r = parseFloat(document.getElementById("num-r").value);
+            I = (Math.PI * Math.pow(r, 4)) / 4;
+        } else {
+            const b = parseFloat(document.getElementById("num-b").value);
+            const h = parseFloat(document.getElementById("num-h").value);
+            I = (b * Math.pow(h, 3)) / 12;
+        }
+        calculatedIc = I;
+        document.getElementById("v-Ic").innerText = I.toFixed(6);
+    }
+
+    function updateDampingInputs(dofs) {
+        const container = document.getElementById("damping-inputs-container");
+        container.innerHTML = "";
+        for (let i = 1; i <= dofs; i++) {
+            const row = document.createElement("div");
+            row.style.display = "flex"; row.style.alignItems = "center"; row.style.gap = "10px"; row.style.fontSize = "0.85rem";
+            const defaultZeta = 0.30; // SETTING DEFAULT ZETA FOR EASY DECAY TEST
+            row.innerHTML = `
+                <label style="width:50px; color:#94a3b8;">ζ${i}:</label>
+                <div class="input-group" style="flex:1;">
+                    <input type="range" id="slide-zeta-${i}" min="0" max="1.0" step="0.005" value="${defaultZeta}" oninput="syncZeta(${i}, true)">
+                    <input type="number" id="num-zeta-${i}" value="${defaultZeta}" min="0" max="1.0" step="0.005" oninput="syncZeta(${i}, false)" onchange="clampAndResyncZeta(${i})">
+                </div>`;
+            container.appendChild(row);
+        }
+    }
+
+    window.syncZeta = function(idx, isSlider) {
+        const slider = document.getElementById(`slide-zeta-${idx}`);
+        const number = document.getElementById(`num-zeta-${idx}`);
+        if (isSlider) number.value = slider.value;
+        else {
+            const val = parseFloat(number.value);
+            if (!isNaN(val)) slider.value = val;
+        }
+    }
+
+    window.clampAndResyncZeta = function(idx) {
+        const number = document.getElementById(`num-zeta-${idx}`);
+        const slider = document.getElementById(`slide-zeta-${idx}`);
+        const maxVal = parseFloat(slider.max) || 1.0;
+        const minVal = parseFloat(slider.min) || 0;
+        let val = parseFloat(number.value);
+
+        if (isNaN(val) || val < minVal) val = minVal;
+        if (val > maxVal) val = maxVal;
+
+        number.value = val;
+        slider.value = val;
+    }
+
+
+    function getDampingRatios(dofs) {
+        const ratios = [];
+        for (let i = 1; i <= dofs; i++) {
+            const val = parseFloat(document.getElementById(`num-zeta-${i}`).value) || 0;
+            ratios.push(val);
+        }
+        return ratios;
+    }
+
+    function updateModeDropdown(dofs) {
+        const filterSelect = document.getElementById("mode-filter");
+        const currentVal = filterSelect.value;
+        let html = '<option value="total">Total Response (Norm by T1)</option>';
+        for(let i=1; i<=dofs; i++) {
+            html += `<option value="${i-1}">Mode ${i} (Norm by T${i})</option>`;
+        }
+        filterSelect.innerHTML = html;
+        if (currentVal !== "total" && parseInt(currentVal) < dofs) filterSelect.value = currentVal;
+        else filterSelect.value = "total";
     }
 
     function onDofChange() {
@@ -243,6 +519,8 @@
             chart.update();
         }
         const dofs = parseInt(document.getElementById("dof-select").value);
+        updateDampingInputs(dofs);
+        updateModeDropdown(dofs);
         drawFrame(new Array(dofs).fill(0));
     }
 
@@ -250,12 +528,12 @@
         const btn = document.getElementById("btn-sim");
         if (isRunning) {
             stopSimulation();
-            btn.innerText = "🌊 Start Earthquake";
+            btn.innerText = "Start Earthquake";
             btn.classList.remove("running");
             toggleInputs(false);
         } else {
             runSimulation();
-            btn.innerText = "⏹ Stop Simulation";
+            btn.innerText = "Stop Simulation";
             btn.classList.add("running");
             toggleInputs(true);
         }
@@ -266,23 +544,39 @@
         if(animId) cancelAnimationFrame(animId);
         const dofs = parseInt(document.getElementById("dof-select").value);
         drawFrame(new Array(dofs).fill(0));
+        currentCursorTime = 0;
+        if(chart) {
+            chart.options.scales.x.min = 0;
+            chart.options.scales.x.max = WINDOW_SIZE;
+            chart.update('none');
+        }
     }
 
     function toggleInputs(locked) {
-        ["dof-select", "i-E", "i-M", "i-I", "i-F", "btn-calc"].forEach(id => {
-            document.getElementById(id).disabled = locked;
-        });
+        const ids = [
+            "dof-select", "btn-calc", "profile-type",
+            "slide-E", "num-E", "slide-M", "num-M", "slide-F", "num-F",
+            "slide-r", "num-r", "slide-b", "num-b", "slide-h", "num-h",
+            "force-type", "slide-dur", "num-dur"
+        ];
+        ids.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = locked; });
+        const dofs = parseInt(document.getElementById("dof-select").value);
+        for(let i=1; i<=dofs; i++) {
+            document.getElementById(`slide-zeta-${i}`).disabled = locked;
+            document.getElementById(`num-zeta-${i}`).disabled = locked;
+        }
     }
 
     function getPayload() {
         const dofs = parseInt(document.getElementById("dof-select").value);
-        const E = parseFloat(document.getElementById("i-E").value);
-        const M = parseFloat(document.getElementById("i-M").value);
-        const I = parseFloat(document.getElementById("i-I").value);
+        const E = parseFloat(document.getElementById("num-E").value);
+        const M = parseFloat(document.getElementById("num-M").value);
+        const I = calculatedIc;
+        const dampingRatios = getDampingRatios(dofs);
         const arr = (v) => Array(dofs).fill().map(() => Array(2).fill(v));
         return {
             "Hc": arr(3.0), "Ec": arr(E), "Ic": arr(I), "Lb": arr(6.0),
-            "depth": 6.0, "floor_load": M, "base_condition": 1
+            "depth": 6.0, "floor_load": M, "base_condition": 1, "damping_ratios": dampingRatios
         };
     }
 
@@ -293,33 +587,63 @@
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             });
+            if (!res.ok) throw new Error(await res.text());
             const data = await res.json();
             displayMatrices(data);
+            systemPeriods = data.frequencies.map(w => (2 * Math.PI) / w);
+            updateModeDropdown(data.dofs);
             drawFrame(new Array(data.dofs).fill(0));
         } catch (e) {
-            console.error(e);
             alert("Calculation Error (Is server running?)");
         }
     }
 
     function displayMatrices(data) {
         const div = document.getElementById("results-area");
-        let freqs = data.frequencies.map(f => (f/(2*Math.PI)).toFixed(2) + " Hz").join(", ");
-        let html = `<div><strong>Natural Frequencies:</strong> [ ${freqs} ]</div><br>`;
-        html += `<div><strong>Mass Matrix [M]:</strong></div>`;
-        data.M_matrix.forEach(row => html += `<div class="mat-row">[ ${row.map(n => (n/1000).toFixed(1)).join(", ")} ]</div>`);
-        html += `<br><div><strong>Stiffness Matrix [K]:</strong></div>`;
-        data.K_matrix.forEach(row => html += `<div class="mat-row">[ ${row.map(n => (n/1000).toFixed(0)).join(", ")} ]</div>`);
+        let html = `<table class="modes-table"><tr><th>Mode</th><th>Freq (f)</th><th>Freq (ω)</th><th>Period (T)</th></tr>`;
+        data.frequencies.forEach((w, i) => {
+            const f = w / (2 * Math.PI);
+            html += `<tr><td style="color:#38bdf8; font-weight:bold;">${i + 1}</td><td>${f.toFixed(2)} Hz</td><td style="color:#f59e0b;">${w.toFixed(2)} rad/s</td><td>${(1/f).toFixed(3)} s</td></tr>`;
+        });
+        html += `</table>`;
+
+        html += `<div><strong>Mass Matrix [M] (kg):</strong></div>`;
+        data.M_matrix.forEach(row => {
+            const formattedRow = row.map(n => n.toFixed(0));
+            html += `<div class="mat-row">[ ${formattedRow.join(", ")} ]</div>`;
+        });
+
+        html += `<br><div><strong>Stiffness Matrix [K] (N/m):</strong></div>`;
+        data.K_matrix.forEach(row => {
+            const formattedRow = row.map(n => {
+                if (Math.abs(n) > 1e6) {
+                    return n.toExponential(2);
+                }
+                return n.toFixed(0);
+            });
+            html += `<div class="mat-row">[ ${formattedRow.join(", ")} ]</div>`;
+        });
+
         div.innerHTML = html;
     }
 
     async function runSimulation() {
-        const freq = parseFloat(document.getElementById("i-F").value);
+        await calculateSystem();
+        const freq = parseFloat(document.getElementById("num-F").value);
+        const modelData = getPayload();
+
+        const fType = document.getElementById("force-type").value;
+        const dur = parseFloat(document.getElementById("num-dur").value);
+
         const payload = {
-            model_req: getPayload(),
+            model_req: modelData,
             sim_req: {
-                "t0": 0, "tf": 10, "dt": 0.02,
-                "force_function": { "amp": 200, "freq": freq * 2 * Math.PI }
+                "t0": 0, "tf": 60, "dt": 0.02,
+                "force_function": {
+                    "amp": 200, "freq": freq * 2 * Math.PI,
+                    "type": fType, "duration": dur
+                },
+                "damping_ratios": modelData.damping_ratios
             }
         };
 
@@ -332,26 +656,63 @@
             const data = await res.json();
 
             lastSimData = data;
-            initGraph(data);
+
+            forceType = data.force_config.type;
+            quakeDuration = data.force_config.duration;
+
+            const maxDisp = data.max_displacement;
+            visualScaleFactor = (maxDisp > 0) ? (120 / maxDisp) : 1;
+
+            const dofs = payload.model_req.Hc.length;
+            updateModeDropdown(dofs);
+
+            initGraph();
             startAnimation(data);
 
         } catch (e) {
-            alert("Simulation Error: " + e.message);
+            alert("Simulation Error: " + e.message + ". Restart Python server (uvicorn) and try again.");
             toggleSimulation();
         }
     }
 
-    // --- Graph Logic ---
-    function initGraph(data) {
+    function applyModeFilter() {
+        if (!lastSimData) return;
+        initGraph();
+    }
+
+    function initGraph() {
+        if (!lastSimData) return;
+        const data = lastSimData;
         const ctx = document.getElementById("graphCanvas").getContext("2d");
-        const roofX = data.x[data.x.length-1];
-        const roofV = data.v[data.v.length-1];
-        const roofA = data.a[data.a.length-1];
-        const labels = data.t.map(t=>t.toFixed(2));
+        const modeFilter = document.getElementById("mode-filter").value;
+        const isTotal = modeFilter === "total";
+
+        let xData, vData, aData;
+        currentNormT = systemPeriods[0] || 1.0;
+        let timeLabel = "T1";
+
+        if (isTotal) {
+            xData = data.x[data.x.length-1];
+            vData = data.v[data.v.length-1];
+            aData = data.a[data.a.length-1];
+        } else {
+            const modeIdx = parseInt(modeFilter);
+            const modeData = data.modal_decomposition[modeIdx];
+            if (modeData) {
+                xData = modeData.x;
+                vData = modeData.v;
+                aData = modeData.a;
+                if(systemPeriods[modeIdx]) {
+                    currentNormT = systemPeriods[modeIdx];
+                    timeLabel = `T${modeIdx + 1}`;
+                }
+            } else { return; }
+        }
+
+        const prepareData = (yArr) => yArr.map((y, i) => ({ x: data.t[i] / currentNormT, y: y }));
 
         if(chart) chart.destroy();
 
-        // Check checkboxes
         const showX = document.getElementById('chk-x').checked;
         const showV = document.getElementById('chk-v').checked;
         const showA = document.getElementById('chk-a').checked;
@@ -359,34 +720,34 @@
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [
-                    {
-                        label: 'Displacement', data: roofX, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, hidden: !showX
-                    },
-                    {
-                        label: 'Velocity', data: roofV, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, hidden: !showV
-                    },
-                    {
-                        label: 'Acceleration', data: roofA, borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, hidden: !showA
-                    }
+                    { label: 'Displacement', data: prepareData(xData), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, hidden: !showX },
+                    { label: 'Velocity', data: prepareData(vData), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, hidden: !showV },
+                    { label: 'Acceleration', data: prepareData(aData), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, hidden: !showA }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
                 interaction: { mode: 'index', intersect: false },
                 scales: {
-                    x: { ticks: {display: false}, grid: {color:'#333'} },
-                    y: { grid: {color:'#333'}, ticks: {color:'#94a3b8'} }
+                    x: {
+                        type: 'linear',
+                        min: 0,
+                        max: WINDOW_SIZE,
+                        title: { display: true, text: `Normalized Time (Cycles = t / ${timeLabel})`, color: '#94a3b8' },
+                        ticks: { stepSize: 1, color: '#94a3b8' },
+                        grid: { color: '#334155' }
+                    },
+                    y: { grid: {color:'#334155'}, ticks: {color:'#94a3b8'} }
                 },
-                plugins: { legend: { display: false } } // Custom legend used instead
+                plugins: { legend: { display: false } }
             }
         });
     }
 
     function toggleGraph(index) {
         if (chart) {
-            const isChecked = document.querySelectorAll('.custom-legend input')[index].checked;
+            const isChecked = document.querySelectorAll('.legend-item input')[index].checked;
             chart.setDatasetVisibility(index, isChecked);
             chart.update();
         }
@@ -404,57 +765,101 @@
         const dofs = parseInt(document.getElementById("dof-select").value);
         if (!disps || disps.length !== dofs) disps = new Array(dofs).fill(0);
 
-        const scale = 2000;
+        const scale = visualScaleFactor;
         const cx = cvs.width / 2;
         const groundY = cvs.height - 30;
-        const floorH = (cvs.height * 0.7) / (dofs || 1);
-        const width = 200;
+        const floorH = (cvs.height * 0.75) / dofs;
+        const width = Math.min(250, cvs.width * 0.5);
 
-        ctx.lineWidth = 4;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.lineJoin = "round";
 
         for (let i = 0; i < dofs; i++) {
             const yBot = groundY - (i * floorH);
             const yTop = groundY - ((i + 1) * floorH);
             const dBot = (i===0) ? 0 : disps[i-1] * scale;
             const dTop = disps[i] * scale;
-            const xBot = cx + dBot;
-            const xTop = cx + dTop;
+            const xBot = cx + dBot; const xTop = cx + dTop;
 
-            ctx.strokeStyle = "#38bdf8";
+            ctx.strokeStyle = "#0ea5e9";
             ctx.beginPath(); ctx.moveTo(xBot - width/2, yBot); ctx.lineTo(xTop - width/2, yTop); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(xBot + width/2, yBot); ctx.lineTo(xTop + width/2, yTop); ctx.stroke();
 
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = "#fff";
             ctx.beginPath(); ctx.moveTo(xTop - width/2, yTop); ctx.lineTo(xTop + width/2, yTop); ctx.stroke();
 
             ctx.fillStyle = "#ef4444";
             ctx.beginPath(); ctx.arc(xTop, yTop, 8, 0, 2*Math.PI); ctx.fill();
 
             ctx.fillStyle = "#aaa"; ctx.font="12px sans-serif";
-            ctx.fillText("M"+(i+1), xTop+10, yTop-10);
+            ctx.fillText("M"+(i+1), xTop-10, yTop-15);
         }
-        ctx.strokeStyle = "#666"; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(cx - 150, groundY); ctx.lineTo(cx + 150, groundY); ctx.stroke();
+        ctx.strokeStyle = "#444"; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(cx - width, groundY); ctx.lineTo(cx + width, groundY); ctx.stroke();
     }
 
     function startAnimation(data) {
         if(animId) cancelAnimationFrame(animId);
-        let frame = 0;
+        const startTime = performance.now();
+        const maxTime = data.t[data.t.length-1];
+        const dt = data.t[1] - data.t[0];
+
         function loop() {
             if (!isRunning) return;
-            if (frame >= data.t.length) { frame = 0; }
+            let elapsed = (performance.now() - startTime) / 1000;
+
+            if (elapsed >= maxTime) {
+                currentCursorTime = maxTime;
+                if(chart) chart.draw();
+
+                const btn = document.getElementById("btn-sim");
+                btn.innerText = "Start Earthquake";
+                btn.classList.remove("running");
+                toggleInputs(false);
+                isRunning = false;
+                return;
+            }
+
+            currentCursorTime = elapsed;
+
+            const normElapsed = elapsed / currentNormT;
+            if (chart) {
+                const windowCenter = WINDOW_SIZE / 2;
+                if (normElapsed > windowCenter) {
+                    chart.options.scales.x.min = normElapsed - windowCenter;
+                    chart.options.scales.x.max = normElapsed + windowCenter;
+                    chart.update('none');
+                } else if (chart.options.scales.x.min !== 0) {
+                     chart.options.scales.x.min = 0;
+                     chart.options.scales.x.max = WINDOW_SIZE;
+                     chart.update('none');
+                }
+            }
+
+            let frame = Math.floor(elapsed / dt);
+            if(frame >= data.x[0].length) frame = data.x[0].length - 1;
+
             const currentDisps = [];
             for(let i=0; i<data.x.length; i++) currentDisps.push(data.x[i][frame]);
             drawFrame(currentDisps);
-            frame++;
+            if(chart) chart.draw();
             animId = requestAnimationFrame(loop);
         }
         loop();
     }
 
-    window.onload = () => { ui(); onDofChange(); };
+    window.onload = async () => {
+        syncInputs('E', true);
+        syncInputs('M', true);
+        syncInputs('F', true);
+        syncInputs('dur', true);
+
+        updateGeometry();
+        document.getElementById("dof-select").value = "2";
+        updateDampingInputs(2);
+        updateModeDropdown(2);
+        await calculateSystem();
+    };
+
     window.onresize = () => {
         const dofs = parseInt(document.getElementById("dof-select").value);
         drawFrame(new Array(dofs).fill(0));
