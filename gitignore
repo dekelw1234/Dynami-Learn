@@ -1,0 +1,11 @@
+# Python temporary files
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+.env
+
+# IDE settings (PyCharm/VSCode)
+.idea/
+.vscode/
