@@ -1,96 +1,89 @@
-import os
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi.staticfiles import StaticFiles  # <-- ייבוא חדש
+from fastapi.responses import FileResponse  # <-- ייבוא חדש
+import json
+import os
 
-from sim_app.services import (
-    StructureFactory,
-    ModalService,
-    TimeSimulationService,
-)
+# וודא שהנתיב תקין (משתמשים ב-sim_app/services)
+from sim_app.services import StructureFactory, ModalService, TimeSimulationService
 
-app = FastAPI(title="DynamiLearn API")
+app = FastAPI()
 
-# ==========================================
-# 1. הגדרת נתיבים לקבצים (Paths)
-# ==========================================
-# אנחנו מוצאים את המיקום של הקובץ הזה (api/main.py)
-# ועולים תיקייה אחת למעלה כדי להגיע לתיקייה הראשית (Dynami-Learn)
-current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-frontend_path = os.path.join(current_dir, "frontend")
+# הגדרות CORS (נשארות למקרה שתרצה לעבוד גם דרך PyCharm)
+origins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:63342",
+    "http://localhost:63342",
+    "null"
+]
 
-# ==========================================
-# 2. CORS (חובה לתקשורת תקינה)
-# ==========================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ==========================================
-# 3. הגשת קבצים סטטיים
-# ==========================================
-# זה מאפשר גישה לקבצים בתיקיית frontend (אם נרצה להוסיף CSS/JS נפרדים בעתיד)
-app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
-# הנתיב הראשי - מגיש את קובץ ה-HTML
-@app.get("/")
-def read_root():
-    return FileResponse(os.path.join(frontend_path, "index.html"))
+# === WebSocket Endpoint ===
+@app.websocket("/ws/simulate")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("Client connected via WebSocket")
 
-# ==========================================
-# 4. המודלים (Schemas)
-# ==========================================
+    try:
+        data = await websocket.receive_text()
+        payload = json.loads(data)
 
-class SingleDOFModelRequest(BaseModel):
-    m: float
-    k: float
-    c: float = 0.0
+        model_req = payload.get("model_req", {})
+        sim_req = payload.get("sim_req", {})
 
-class ShearBuildingModelRequest(BaseModel):
-    Hc: List[List[float]]
-    Ec: List[List[float]]
-    Ic: List[List[float]]
-    Lb: List[List[float]]
-    depth: float
-    floor_load: float
-    base_condition: int = 1
-    damping_ratio: float = 0.0
+        if model_req:
+            model = StructureFactory.create_shear_building(model_req)
+            simulator = TimeSimulationService()
+            async for result in simulator.run(model, sim_req):
+                await websocket.send_json(result)
 
-class TimeSimulationRequest(BaseModel):
-    t0: float
-    tf: float
-    dt: float
-    x0: Optional[List[float]] = None
-    v0: Optional[List[float]] = None
-    force_function: Optional[dict] = None
+    except WebSocketDisconnect:
+        print("Client disconnected.")
+    except Exception as e:
+        print(f"Simulation error: {e}")
+        await websocket.send_json({"type": "ERROR", "message": str(e)})
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
 
-# ==========================================
-# 5. Endpoints (הלוגיקה)
-# ==========================================
 
-@app.post("/single-dof/modal")
-def single_dof_modal(model_req: SingleDOFModelRequest):
-    model = StructureFactory.create_single_dof(model_req.dict())
-    return ModalService().run(model)
-
-@app.post("/single-dof/simulate")
-def single_dof_simulate(model_req: SingleDOFModelRequest, sim_req: TimeSimulationRequest):
-    model = StructureFactory.create_single_dof(model_req.dict())
-    return TimeSimulationService().run(model, sim_req.dict())
-
+# === API רגיל ===
 @app.post("/shear-building/modal")
-def shear_building_modal(model_req: ShearBuildingModelRequest):
-    model = StructureFactory.create_shear_building(model_req.dict())
-    return ModalService().run(model)
+async def calculate_modal_properties(payload: dict):
+    try:
+        if payload:
+            model = StructureFactory.create_shear_building(payload)
+            modal_service = ModalService()
+            return modal_service.run(model)
+        raise HTTPException(status_code=400, detail="Missing configuration.")
+    except Exception as e:
+        print(f"Error during Modal Calculation: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {e}")
 
-@app.post("/shear-building/simulate")
-def shear_building_simulate(model_req: ShearBuildingModelRequest, sim_req: TimeSimulationRequest):
-    model = StructureFactory.create_shear_building(model_req.dict())
-    return TimeSimulationService().run(model, sim_req.dict())
+
+# === הגשת דף הבית (החלק החדש!) ===
+# מוודא שהשרת יודע איפה התיקייה נמצאת ביחס לקובץ המריץ
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+
+
+# נתיב שמגיש את index.html כשנכנסים לכתובת הראשי (/)
+@app.get("/")
+async def read_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+
+# (אופציונלי) אם בעתיד יהיו תמונות/CSS נפרדים, השורה הזו תאפשר גישה אליהם
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
