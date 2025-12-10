@@ -16,7 +16,6 @@ const quakePlugin = {
         const type = document.getElementById("force-type").value;
         if (type === 'pulse') {
             const duration = parseFloat(document.getElementById("num-dur").value);
-            // Get the Period specific to this chart instance
             const T_norm = chart.config.options.scales.x.customPeriod || 1.0;
             const normVal = duration / T_norm;
             const xAxis = chart.scales.x;
@@ -55,6 +54,13 @@ window.onload = function() {
     onDofChange();
 
     setTimeout(calculateSystem, 500);
+
+    // --- תוקן: האזנה לכפתור חישוב המטריצות ---
+    // הנחה: לכפתור ב-HTML קוראים btn-calc. אם לא, הוסף לו id="btn-calc"
+    const calcBtn = document.getElementById("btn-calc");
+    if (calcBtn) {
+        calcBtn.onclick = calculateSystem;
+    }
 };
 
 // --- TABS LOGIC ---
@@ -62,24 +68,19 @@ function initTabsAndCharts(periods) {
     const header = document.getElementById('tabs-header');
     const body = document.getElementById('tabs-body');
 
-    // Cleanup
     header.innerHTML = '';
     body.innerHTML = '';
     activeCharts.forEach(c => c.destroy());
     activeCharts = [];
 
-    // Create Tabs
     periods.forEach((T, i) => {
         const modeNum = i + 1;
-
-        // 1. Button
         const btn = document.createElement('button');
         btn.className = `tab-btn ${i === 0 ? 'active' : ''}`;
         btn.innerText = `Mode ${modeNum} (T=${T.toFixed(3)}s)`;
         btn.onclick = () => switchTab(i);
         header.appendChild(btn);
 
-        // 2. Container
         const contentDiv = document.createElement('div');
         contentDiv.className = `tab-content ${i === 0 ? 'active' : ''}`;
         contentDiv.id = `tab-content-${i}`;
@@ -93,7 +94,6 @@ function initTabsAndCharts(periods) {
         contentDiv.appendChild(canvasContainer);
         body.appendChild(contentDiv);
 
-        // 3. Chart Instance
         const ctx = canvas.getContext('2d');
         const newChart = new Chart(ctx, {
             type: 'line',
@@ -131,7 +131,7 @@ function switchTab(index) {
     contents.forEach((c, i) => c.classList.toggle('active', i === index));
 }
 
-// --- WEBSOCKET ---
+// --- WEBSOCKET & LOCKING ---
 function toggleSimulation() {
     const btn = document.getElementById("btn-sim");
     if (isRunning) {
@@ -139,6 +139,9 @@ function toggleSimulation() {
         isRunning = false;
         btn.innerText = "Start Simulation";
         btn.classList.remove("running");
+
+        // --- תוקן: שחרור נעילה ---
+        document.body.classList.remove("sim-running");
     } else {
         startWebSocket();
     }
@@ -170,6 +173,9 @@ function startWebSocket() {
         isRunning = true;
         btn.innerText = "Stop Simulation";
         btn.classList.add("running");
+
+        // --- תוקן: הפעלת נעילה ---
+        document.body.classList.add("sim-running");
 
         activeCharts.forEach(obj => {
             obj.chart.data.datasets.forEach(ds => ds.data = []);
@@ -235,14 +241,19 @@ function validateInput(id) {
 }
 
 function onDofChange() {
-    const c = parseInt(document.getElementById('dof-select').value);
-    const d = document.getElementById('damping-container');
-    d.innerHTML = '';
-    for (let i = 1; i <= c; i++) {
-        d.innerHTML += `<div class="label-row"><label style="width:30px">ζ${i}:</label><div class="input-group" style="flex:1"><input type="range" id="slide-z${i}" min="0" max="1" step="0.01" value="0.02" oninput="syncZeta(${i},true)"><input type="number" id="num-z${i}" value="0.02" min="0" max="1" step="0.01" oninput="syncZeta(${i},false)"></div></div>`;
+        // --- תיקון: איפוס מלא למניעת התנגשות מימדים ---
+        resetSimulation();
+        // ---------------------------------------------
+
+        const c = parseInt(document.getElementById('dof-select').value);
+        const d = document.getElementById('damping-container');
+        d.innerHTML = '';
+        for (let i = 1; i <= c; i++) {
+            d.innerHTML += `<div class="label-row"><label style="width:30px">ζ${i}:</label><div class="input-group" style="flex:1"><input type="range" id="slide-z${i}" min="0" max="1" step="0.01" value="0.02" oninput="syncZeta(${i},true)"><input type="number" id="num-z${i}" value="0.02" min="0" max="1" step="0.01" oninput="syncZeta(${i},false)"></div></div>`;
+        }
+        drawFrame(new Array(c).fill(0));
+        calculateSystem();
     }
-    drawFrame(new Array(c).fill(0));
-}
 
 window.syncZeta = function(i, s) {
     const sl = document.getElementById(`slide-z${i}`), nm = document.getElementById(`num-z${i}`);

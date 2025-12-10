@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynami-Learn | Stable</title>
+    <title>Dynami-Learn | Final Release</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; --success: #10b981; }
@@ -15,7 +15,7 @@
         h1 { margin: 0; color: var(--accent); font-size: 1.4rem; text-align: center; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
 
         .section { background: var(--panel); padding: 10px; border-radius: 6px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 8px; }
-        .section-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 4px; }
+        .section-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
 
         .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
         .input-group { display: flex; gap: 5px; align-items: center; }
@@ -24,17 +24,20 @@
         input[type="number"] { width: 60px; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px 5px; border-radius: 4px; text-align: center; font-family: monospace; font-weight: bold; }
         select { background:#0f172a; color:white; border:1px solid #334155; border-radius:4px; padding:4px; font-size:0.8rem; width: 100%; }
 
-        /* Buttons */
+        /* Buttons Global */
         .btn-row { display: flex; gap: 8px; margin-top: 5px; }
-        button.action-btn { flex: 1; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.75rem; background: #334155; color: #fff; border: 1px solid #475569; }
+
+        button.action-btn {
+            padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.75rem; background: #334155; color: #fff; border: 1px solid #475569;
+        }
         button.action-btn:hover { background: #475569; }
         button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Specific Button Colors */
-        button.calc-btn { background: #0ea5e9; color: #fff; border: none; margin-top: 0; }
+        /* כפתור חישוב */
+        button.calc-btn { background: #0ea5e9; color: #fff; border: none; margin: 10px auto; width: auto; min-width: 140px; display: block; }
         button.calc-btn:hover { background: #0284c7; }
 
-        button.start-btn { background: #10b981; border: none; }
+        button.start-btn { background: #10b981; border: none; flex: 1; }
         button.start-btn:hover { background: #059669; }
         button.start-btn.running { background: #ef4444; }
         button.start-btn.paused { background: #f59e0b; }
@@ -48,24 +51,27 @@
 
         .card { background: var(--panel); border: 1px solid #334155; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .card-header { background: rgba(0,0,0,0.2); padding: 0 12px; font-size: 0.8rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; height: 36px; flex-shrink: 0; }
-
         .card-body { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* Matrix Table */
-        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.8rem; padding: 10px; color: #cbd5e1; line-height: 1.5; overflow: auto; }
-        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .modes-table th { text-align: left; color: #64748b; font-size: 0.7rem; border-bottom: 1px solid #334155; padding: 4px; }
-        .modes-table td { padding: 4px; border-bottom: 1px solid #1e293b; }
+        /* --- מטריצות (פונט מוגדל) --- */
+        .matrix-container {
+            font-family: 'Consolas', monospace;
+            font-size: 1rem; /* הוגדל לבקשתך */
+            padding: 15px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            overflow: auto;
+        }
+        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .modes-table th { text-align: left; color: #64748b; font-size: 0.9rem; border-bottom: 1px solid #334155; padding: 6px; }
+        .modes-table td { padding: 6px; border-bottom: 1px solid #1e293b; font-size: 0.95rem; }
 
-        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 8px; display: block; font-size: 0.75rem; }
-        .mat-row { display: flex; gap: 8px; font-size: 0.8rem; color: var(--accent); white-space: nowrap; }
+        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 12px; display: block; font-size: 0.9rem; }
+        .mat-row { display: flex; gap: 12px; font-size: 1rem; color: var(--accent); white-space: nowrap; }
 
         /* Tabs & Graph */
         .tabs-header { display: flex; flex: 1; overflow-x: auto; height: 100%; }
-        .tab-btn {
-            padding: 0 15px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer;
-            font-size: 0.75rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap;
-        }
+        .tab-btn { padding: 0 15px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
         .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .tab-btn.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-bottom: 2px solid var(--accent); }
 
@@ -78,6 +84,63 @@
         .legend-row { display: flex; gap: 10px; font-size: 0.75rem; align-items: center; }
         .graph-scroll-container { height: 24px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
         #time-slider { width: 100%; cursor: pointer; height: 6px; }
+
+        /* --- כפתורי מידע (i) --- */
+        .info-btn {
+            background: transparent;
+            color: var(--info);
+            border: 1px solid var(--info);
+            border-radius: 50%;
+            width: 16px; height: 16px;
+            font-size: 10px; font-family: serif; font-weight: bold; font-style: italic;
+            cursor: pointer; margin-left: 5px;
+            display: inline-flex; align-items: center; justify-content: center;
+            opacity: 0.8; transition: 0.2s;
+        }
+        .info-btn:hover { background: var(--info); color: #000; opacity: 1; }
+
+        /* --- חלונית הסבר צפה --- */
+        .info-tooltip {
+            position: absolute;
+            background: var(--panel);
+            border: 1px solid var(--accent);
+            border-left: 4px solid var(--info);
+            color: var(--text);
+            padding: 12px;
+            padding-right: 25px; /* מקום לכפתור הסגירה */
+            border-radius: 4px;
+            font-size: 0.85rem;
+            z-index: 10000;
+            width: 260px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+            line-height: 1.5;
+            white-space: pre-wrap; /* שומר על ירידות שורה */
+            animation: popIn 0.2s ease-out;
+        }
+        .info-tooltip strong { color: var(--info); display: block; margin-bottom: 5px; }
+
+        /* --- כפתור סגירה (X) בתוך הטולטיפ --- */
+        .tooltip-close {
+            position: absolute;
+            top: 2px; right: 5px;
+            background: transparent; border: none;
+            color: #ef4444; font-weight: bold; font-size: 14px;
+            cursor: pointer; opacity: 0.7;
+        }
+        .tooltip-close:hover { opacity: 1; transform: scale(1.1); }
+
+        @keyframes popIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
+
+        /* ========================================= */
+        /* ניהול מצב נעילה (Sim Running)     */
+        /* ========================================= */
+        body.sim-running { cursor: not-allowed; }
+        body.sim-running aside { pointer-events: none; opacity: 0.7; }
+        body.sim-running #btn-sim, body.sim-running #btn-reset { pointer-events: auto !important; cursor: pointer !important; opacity: 1 !important; }
+        body.sim-running main { cursor: default; pointer-events: auto !important; }
+        body.sim-running .tab-btn, body.sim-running .legend-item { cursor: pointer; }
+        body.sim-running #time-slider { pointer-events: none !important; opacity: 0.5 !important; cursor: not-allowed !important; }
+
     </style>
 </head>
 <body>
@@ -86,7 +149,10 @@
     <h1>Dynami-Learn</h1>
 
     <div class="section">
-        <div class="section-title">1. Structure</div>
+        <div class="section-title">
+            1. Structure
+            <button class="info-btn" onclick="showTooltip('stories', event)">i</button>
+        </div>
         <div class="label-row">
             <label>Stories:</label>
             <select id="dof-select" onchange="onDofChange()">
@@ -100,13 +166,17 @@
     <div class="section">
         <div class="section-title">2. Properties</div>
 
-        <div class="label-row"><label>Stiffness (E) [GPa]:</label></div>
+        <div class="label-row">
+            <label>Stiffness (E) [GPa]: <button class="info-btn" onclick="showTooltip('E', event)">i</button></label>
+        </div>
         <div class="input-group">
             <input type="range" id="slide-E" min="10" max="50" value="30" oninput="syncInputs('E', true)">
             <input type="number" id="num-E" value="30" min="1" max="50" oninput="syncInputs('E', false)" onchange="validateInput('E')">
         </div>
 
-        <div class="label-row"><label>Mass [kN/m²]:</label></div>
+        <div class="label-row">
+            <label>Mass [kN/m²]: <button class="info-btn" onclick="showTooltip('mass', event)">i</button></label>
+        </div>
         <div class="input-group">
             <input type="range" id="slide-M" min="10" max="100" value="50" oninput="syncInputs('M', true)">
             <input type="number" id="num-M" value="50" min="1" max="100" oninput="syncInputs('M', false)" onchange="validateInput('M')">
@@ -125,7 +195,10 @@
     </div>
 
     <div class="section">
-        <div class="section-title">3. Damping (Zeta 0-1)</div>
+        <div class="section-title">
+            3. Damping (Zeta 0-1)
+            <button class="info-btn" onclick="showTooltip('damping', event)">i</button>
+        </div>
         <div id="damping-container" style="display:flex; flex-direction:column; gap:5px;"></div>
     </div>
 
@@ -150,7 +223,9 @@
             </div>
         </div>
 
-        <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.7rem;"></span></label></div>
+        <div class="label-row">
+            <label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.7rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label>
+        </div>
         <div class="input-group">
             <input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)">
             <input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')">
@@ -163,7 +238,7 @@
     </div>
 
     <div class="credit-footer">
-        Powered by<br><strong>Dekel Winkler & Jeremy Scalais</strong>
+        Powered by<br><strong>Dynami-Learn Team</strong>
     </div>
 </aside>
 
@@ -191,8 +266,7 @@
                 <label class="legend-item" style="color:#f59e0b"><input type="checkbox" id="chk-a" checked onchange="updateGraphVisibility()"> Acc</label>
             </div>
         </div>
-        <div id="tabs-body" class="card-body" style="padding:0; border-bottom: none;">
-            </div>
+        <div id="tabs-body" class="card-body" style="padding:0; border-bottom: none;"></div>
         <div class="graph-scroll-container">
             <input type="range" id="time-slider" min="0" max="100" value="100" step="0.1" oninput="onTimeScroll()">
         </div>
@@ -203,7 +277,6 @@
     const API_URL = "http://127.0.0.1:8000";
     const WS_URL = "ws://127.0.0.1:8000/ws/simulate";
 
-    // State
     let ws = null;
     let isRunning = false;
     let isPaused = false;
@@ -212,9 +285,45 @@
     let maxAbsDisp = 0.00001;
     let maxTimeRecorded = 0;
     let isAutoScroll = true;
-    let lastState = { t:0, all_x:null, all_v:null }; // For resume
+    let lastState = { t:0, all_x:null, all_v:null };
 
-    // --- CHART PLUGIN: QUAKE END LINE ---
+    // --- INFO TOOLTIPS DATA ---
+    const tooltipsData = {
+        "stories": "Degrees of Freedom:\n\nNumber of floors (masses).\n• 1: SDOF System.\n• 2-3: MDOF System.",
+        "E": "Stiffness (E): Material strength.\n\n• Max E (50 GPa) is enforced for stability.",
+        "mass": "Mass: Weight on each floor. Max 100 kN/m² enforced.",
+        "damping": "Damping Ratio (Zeta):\n\nZeta (ζ) controls energy dissipation.\n• Used in Caughey Damping calculation.\n• 0.02 is typical for concrete structures. Max value of 1.0 enforced.",
+        "freq": "Forcing Freq: External force oscillation rate.\n\nAdjust to match natural frequency to observe resonance effects."
+    };
+
+    function showTooltip(key, event) {
+        closeAllTooltips();
+        event.stopPropagation();
+
+        const div = document.createElement('div');
+        div.className = 'info-tooltip';
+
+        // הוספנו כפתור סגירה X
+        div.innerHTML = `
+            <button class="tooltip-close" onclick="closeAllTooltips()">✕</button>
+            <div>${tooltipsData[key] || "Info not available."}</div>
+        `;
+
+        const btnRect = event.target.getBoundingClientRect();
+        div.style.top = (window.scrollY + btnRect.top + 20) + 'px';
+        div.style.left = (window.scrollX + btnRect.left + 20) + 'px';
+
+        document.body.appendChild(div);
+    }
+
+    function closeAllTooltips() {
+        document.querySelectorAll('.info-tooltip').forEach(el => el.remove());
+    }
+
+    document.addEventListener('click', closeAllTooltips);
+
+
+    // --- CHART PLUGIN ---
     const quakePlugin = {
         id: 'quakeLine',
         afterDraw: (chart) => {
@@ -245,30 +354,17 @@
         setTimeout(calculateSystem, 500);
     };
 
-    // --- CONTROLS: LOCK INPUTS ---
-    function disableInputs(disabled) {
-        const ids = ['dof-select', 'slide-E', 'num-E', 'slide-M', 'num-M', 'profile-type', 'force-type', 'slide-dur', 'num-dur', 'slide-F', 'num-F', 'slide-r', 'num-r', 'slide-b', 'num-b', 'slide-h', 'num-h'];
-        ids.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = disabled; });
-        const count = parseInt(document.getElementById('dof-select').value);
-        for(let i=1; i<=count; i++) {
-            if(document.getElementById(`slide-z${i}`)) document.getElementById(`slide-z${i}`).disabled = disabled;
-            if(document.getElementById(`num-z${i}`)) document.getElementById(`num-z${i}`).disabled = disabled;
-        }
-    }
-
-    // --- SIMULATION LOGIC ---
     function toggleSimulation() {
         const btn = document.getElementById("btn-sim");
         if (isRunning) {
-            // PAUSE
             if (ws) ws.close();
             isRunning = false;
             isPaused = true;
             btn.innerText = "Resume";
             btn.className = "action-btn start-btn paused";
             isAutoScroll = false;
+            document.body.classList.remove("sim-running");
         } else {
-            // START / RESUME
             startWebSocket();
         }
     }
@@ -277,43 +373,30 @@
         if (ws) ws.close();
         isRunning = false;
         isPaused = false;
-
-        // Reset Buttons & Inputs
         const btn = document.getElementById("btn-sim");
         btn.innerText = "Start";
         btn.className = "action-btn start-btn";
-        disableInputs(false);
-
-        // Reset Data
+        document.body.classList.remove("sim-running");
         lastState = { t: 0, all_x: null, all_v: null };
         maxTimeRecorded = 0;
         isAutoScroll = true;
         document.getElementById('time-slider').value = 0;
         maxAbsDisp = 0.00001;
-
-        // Clear Charts
         activeCharts.forEach(obj => {
             obj.chart.data.datasets.forEach(ds => ds.data = []);
             obj.chart.options.scales.x.min = 0;
             obj.chart.options.scales.x.max = 20;
             obj.chart.update();
         });
-
-        // Clear Visualizer
         const dofs = parseInt(document.getElementById('dof-select').value);
         drawFrame(new Array(dofs).fill(0));
     }
 
     function startWebSocket() {
         if (ws) ws.close();
-
-        // Recalculate system to be sure
         calculateSystem();
-
-        // Prepare initial state for Resume
         const startT = isPaused ? lastState.t : 0;
         const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
-
         const payload = {
             model_req: getModelPayload(),
             sim_req: {
@@ -329,51 +412,38 @@
                 initial_conditions: initialConds
             }
         };
-
         ws = new WebSocket(WS_URL);
         const btn = document.getElementById("btn-sim");
         btn.innerText = "Connecting...";
-
         ws.onopen = () => {
             ws.send(JSON.stringify(payload));
             isRunning = true;
             isAutoScroll = true;
-            disableInputs(true);
+            document.body.classList.add("sim-running");
             btn.innerText = "Stop";
             btn.className = "action-btn start-btn running";
-
-            // If starting fresh, clear charts
             if (!isPaused) {
                 activeCharts.forEach(obj => { obj.chart.data.datasets.forEach(ds => ds.data = []); obj.chart.update(); });
             }
         };
-
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if (msg.type === 'DATA') {
                 const rawTime = msg.t;
                 maxTimeRecorded = rawTime;
-
-                // Save state
                 lastState.t = rawTime;
                 lastState.all_x = msg.all_x;
                 lastState.all_v = msg.all_v;
-
-                // Update Slider
                 const slider = document.getElementById('time-slider');
                 slider.max = rawTime;
                 if(isAutoScroll) slider.value = rawTime;
-
-                // Update Charts
                 activeCharts.forEach(obj => {
                     const chart = obj.chart;
                     const T = obj.period;
                     const normT = rawTime / T;
-
                     chart.data.datasets[0].data.push({x: normT, y: msg.x});
                     if(msg.v !== undefined) chart.data.datasets[1].data.push({x: normT, y: msg.v});
                     chart.data.datasets[2].data.push({x: normT, y: msg.a});
-
                     if (isAutoScroll) {
                         const win = 20;
                         if (normT > win) { chart.options.scales.x.min = normT - win; chart.options.scales.x.max = normT; }
@@ -382,32 +452,22 @@
                     }
                 });
                 drawFrame(msg.all_x);
-            }
-            else if (msg.type === 'ERROR') {
+            } else if (msg.type === 'ERROR') {
                 alert("Server Error: " + msg.message);
                 toggleSimulation();
             }
         };
-
-        ws.onerror = (e) => {
-            console.error(e);
-            alert("Connection Error. Check server console.");
-            toggleSimulation();
-        };
-
         ws.onclose = () => { if(isRunning) toggleSimulation(); };
     }
 
     function onTimeScroll() {
         isAutoScroll = false;
         const val = parseFloat(document.getElementById('time-slider').value);
-
         activeCharts.forEach(obj => {
             const chart = obj.chart;
             const T = obj.period;
             const normVal = val / T;
             const win = 20;
-
             if (normVal > win) {
                 chart.options.scales.x.min = normVal - win;
                 chart.options.scales.x.max = normVal;
@@ -419,25 +479,19 @@
         });
     }
 
-    // --- TABS & CHARTS ---
     function initTabsAndCharts(periods) {
         const header = document.getElementById('tabs-header');
         const body = document.getElementById('tabs-body');
-
         header.innerHTML = ''; body.innerHTML = '';
         activeCharts.forEach(c => c.chart.destroy());
         activeCharts = [];
-
         periods.forEach((T, i) => {
             const modeNum = i + 1;
-            // Tab Button
             const btn = document.createElement('button');
             btn.className = `tab-btn ${i === 0 ? 'active' : ''}`;
             btn.innerText = `Mode ${modeNum} (T=${T.toFixed(3)}s)`;
             btn.onclick = () => switchTab(i);
             header.appendChild(btn);
-
-            // Chart Container
             const contentDiv = document.createElement('div');
             contentDiv.className = `tab-content ${i === 0 ? 'active' : ''}`;
             const canvasContainer = document.createElement('div');
@@ -446,8 +500,6 @@
             canvasContainer.appendChild(canvas);
             contentDiv.appendChild(canvasContainer);
             body.appendChild(contentDiv);
-
-            // Chart Instance
             const ctx = canvas.getContext('2d');
             const newChart = new Chart(ctx, {
                 type: 'line',
@@ -459,15 +511,8 @@
                 options: {
                     responsive: true, maintainAspectRatio: false, animation: false,
                     scales: {
-                        x: {
-                            type: 'linear', min: 0, max: 20, grid: {color:'#334155'},
-                            title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'},
-                            customPeriod: T
-                        },
-                        y: {
-                            grid: {color:'#334155'},
-                            ticks: { color:'#94a3b8', callback: (v) => Number(v).toExponential(1) } // FORMAT FIX
-                        }
+                        x: { type: 'linear', min: 0, max: 20, grid: {color:'#334155'}, title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'}, customPeriod: T },
+                        y: { grid: {color:'#334155'}, ticks: { color:'#94a3b8', callback: (v) => Number(v).toExponential(1) } }
                     },
                     plugins: { legend: {display:false} }
                 }
@@ -481,7 +526,6 @@
         btns.forEach((b, i) => b.classList.toggle('active', i === index));
         const contents = document.querySelectorAll('.tab-content');
         contents.forEach((c, i) => c.classList.toggle('active', i === index));
-        // Force resize for chart to render
         if(activeCharts[index]) setTimeout(() => activeCharts[index].chart.resize(), 10);
     }
 
@@ -495,14 +539,11 @@
         });
     }
 
-    // --- STANDARD INPUTS ---
     function syncInputs(id, fS) {
         const s=document.getElementById('slide-'+id), n=document.getElementById('num-'+id);
         if(fS) n.value=s.value; else s.value=n.value;
         if(['r','b','h'].includes(id)) updateGeometry();
         if(id==='F') document.getElementById('val-w').innerText=`(ω=${(parseFloat(n.value)*6.28).toFixed(1)})`;
-        // LIVE UPDATE:
-        if(['E','M','r','b','h','F'].includes(id)) calculateSystem();
     }
 
     function validateInput(id) {
@@ -513,6 +554,7 @@
     }
 
     function onDofChange() {
+        resetSimulation();
         const c=parseInt(document.getElementById('dof-select').value), d=document.getElementById('damping-container');
         d.innerHTML='';
         for(let i=1; i<=c; i++) d.innerHTML+=`<div class="label-row"><label style="width:30px">ζ${i}:</label><div class="input-group" style="flex:1"><input type="range" id="slide-z${i}" min="0" max="1" step="0.01" value="0.02" oninput="syncZeta(${i},true)"><input type="number" id="num-z${i}" value="0.02" min="0" max="1" step="0.01" oninput="syncZeta(${i},false)"></div></div>`;
@@ -526,18 +568,18 @@
 
     function toggleDuration(){ document.getElementById('dur-box').style.display = document.getElementById('force-type').value==='pulse'?'block':'none'; }
 
-    function updateProfileType() { const t=document.getElementById('profile-type').value, b=document.getElementById('geo-inputs'); if(t==='circle') b.innerHTML=`<div class="label-row"><label>Radius (r) [m]:</label></div><div class="input-group"><input type="range" id="slide-r" min="0.1" max="0.6" step="0.01" value="0.25" oninput="syncInputs('r',true)"><input type="number" id="num-r" value="0.25" min="0.01" max="0.6" step="0.01" oninput="syncInputs('r',false)" onchange="validateInput('r')"></div>`; else b.innerHTML=`<div class="label-row"><label>Width (b) [m]:</label></div><div class="input-group"><input type="range" id="slide-b" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('b',true)"><input type="number" id="num-b" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('b',false)" onchange="validateInput('b')"></div><div class="label-row"><label>Height (h) [m]:</label></div><div class="input-group"><input type="range" id="slide-h" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('h',true)"><input type="number" id="num-h" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('h',false)" onchange="validateInput('h')"></div>`; updateGeometry(); calculateSystem(); }
+    function updateProfileType() { const t=document.getElementById('profile-type').value, b=document.getElementById('geo-inputs'); if(t==='circle') b.innerHTML=`<div class="label-row"><label>Radius (r) [m]: <button class="info-btn" onclick="showTooltip('E', event)" style="visibility:hidden">i</button></label></div><div class="input-group"><input type="range" id="slide-r" min="0.1" max="0.6" step="0.01" value="0.25" oninput="syncInputs('r',true)"><input type="number" id="num-r" value="0.25" min="0.01" max="0.6" step="0.01" oninput="syncInputs('r',false)" onchange="validateInput('r')"></div>`; else b.innerHTML=`<div class="label-row"><label>Width (b) [m]:</label></div><div class="input-group"><input type="range" id="slide-b" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('b',true)"><input type="number" id="num-b" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('b',false)" onchange="validateInput('b')"></div><div class="label-row"><label>Height (h) [m]:</label></div><div class="input-group"><input type="range" id="slide-h" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('h',true)"><input type="number" id="num-h" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('h',false)" onchange="validateInput('h')"></div>`; updateGeometry(); calculateSystem(); }
 
     function updateGeometry() { const t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r')?document.getElementById('num-r').value:0.25); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b')?document.getElementById('num-b').value:0.4), h=parseFloat(document.getElementById('num-h')?document.getElementById('num-h').value:0.4); I=b*Math.pow(h,3)/12;} document.getElementById('val-Ic').innerText=I.toFixed(6); }
 
     function getModelPayload() { const dofs=parseInt(document.getElementById('dof-select').value), E=parseFloat(document.getElementById('num-E').value), M=parseFloat(document.getElementById('num-M').value), t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r').value); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b').value), h=parseFloat(document.getElementById('num-h').value); I=b*Math.pow(h,3)/12;} const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v)); return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() }; }
 
-    // --- SERVER CALC ---
     async function calculateSystem() {
         try {
+            console.log("Fetching matrices...");
             const res = await fetch(`${API_URL}/shear-building/modal`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(getModelPayload()) });
+            if(!res.ok) throw new Error("Server error");
             const data = await res.json();
-
             const newPeriods = data.frequencies.map(w => 2*Math.PI/w);
             if(newPeriods.length !== systemPeriods.length) {
                 systemPeriods = newPeriods;
@@ -553,18 +595,12 @@
                     obj.chart.update('none');
                 });
             }
-
             let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq(Hz)</th><th>ω (rad/s)</th><th>T(s)</th></tr>`;
-            data.frequencies.forEach((w,i)=> {
-                h+=`<tr><td>${i+1}</td><td>${(w/6.28).toFixed(2)}</td><td style="color:#f59e0b; font-weight:bold;">${w.toFixed(2)}</td><td style="color:#38bdf8">${(6.28/w).toFixed(3)}</td></tr>`;
-            });
+            data.frequencies.forEach((w,i)=> { h+=`<tr><td>${i+1}</td><td>${(w/6.28).toFixed(2)}</td><td style="color:#f59e0b; font-weight:bold;">${w.toFixed(2)}</td><td style="color:#38bdf8">${(6.28/w).toFixed(3)}</td></tr>`; });
             h+=`</table><span class="mat-label">Mass [M] (kg):</span>`; data.M_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>n.toFixed(0)).join(", ")} ]</div>`);
             h+=`<span class="mat-label">Stiffness [K] (N/m):</span>`; data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>n.toExponential(1)).join(", ")} ]</div>`);
             document.getElementById("results-area").innerHTML = h;
-        } catch(e){
-            console.error(e);
-            document.getElementById("results-area").innerText = "Error calculating system properties. Is server running?";
-        }
+        } catch(e){ console.error(e); document.getElementById("results-area").innerText = "Error calculating system properties. Is server running?"; }
     }
 
     function drawFrame(disps) {
@@ -574,19 +610,23 @@
         const dMax = Math.max(maxAbsDisp, 0.001);
         const sX = (w*0.3)/dMax;
         const fH = (h*0.8)/f;
-
         ctx.fillStyle="#000"; ctx.fillRect(0,0,w,h);
         ctx.lineWidth=3; ctx.lineCap="round";
-
         const cx=w/2, gy=h-20;
-        ctx.strokeStyle="#444"; ctx.beginPath(); ctx.moveTo(cx-100,gy); ctx.lineTo(cx+100,gy); ctx.stroke();
-
+        const groundWidth=400, buildWidth=200;
+        ctx.strokeStyle="#444"; ctx.beginPath(); ctx.moveTo(cx - groundWidth/2, gy); ctx.lineTo(cx + groundWidth/2, gy); ctx.stroke();
         for(let i=0;i<f;i++){
-            const yB=gy-i*fH, yT=gy-(i+1)*fH, xB=(i===0)?0:disps[i-1]*sX, xT=disps[i]*sX;
-            ctx.strokeStyle="#38bdf8"; ctx.beginPath(); ctx.moveTo(cx-50+xB,yB); ctx.lineTo(cx-50+xT,yT); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx+50+xB,yB); ctx.lineTo(cx+50+xT,yT); ctx.stroke();
-            ctx.strokeStyle="#fff"; ctx.beginPath(); ctx.moveTo(cx-50+xT,yT); ctx.lineTo(cx+50+xT,yT); ctx.stroke();
+            const yB=gy-i*fH, yT=gy-(i+1)*fH, xB=(i===0)?0:disps[i-1]*sX, xT=disps[i]*sX, halfW=buildWidth/2;
+            ctx.strokeStyle="#38bdf8"; ctx.beginPath(); ctx.moveTo(cx-halfW+xB,yB); ctx.lineTo(cx-halfW+xT,yT); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx+halfW+xB,yB); ctx.lineTo(cx+halfW+xT,yT); ctx.stroke();
+            ctx.strokeStyle="#fff"; ctx.beginPath(); ctx.moveTo(cx-halfW+xT,yT); ctx.lineTo(cx+halfW+xT,yT); ctx.stroke();
             ctx.fillStyle="#ef4444"; ctx.beginPath(); ctx.arc(cx+xT,yT,6,0,6.28); ctx.fill();
+
+            // --- LABELS M1, M2 ---
+            ctx.fillStyle="#ffffff";
+            ctx.font="bold 14px Consolas";
+            ctx.textAlign="center";
+            ctx.fillText(`M${i+1}`, cx + xT, yT - 15);
         }
     }
 </script>

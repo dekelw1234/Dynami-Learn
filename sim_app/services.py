@@ -40,30 +40,41 @@ class ModalService:
 
 class TimeSimulationService:
     async def run(self, model, payload: dict):
-        # 1. קריאת תנאי התחלה (עבור Pause/Resume)
+        # 1. הגדרות זמן
         t0 = float(payload.get("t0", 0.0))
+        tf = 60.0
         dt = float(payload.get("dt", 0.02))
-        tf = 60.0  # זמן מקסימלי לריצה רצופה
 
-        # קבלת מצב קודם אם קיים (Pause/Resume)
+        # 2. קבלת תנאי התחלה (עבור Resume)
         init_cond = payload.get("initial_conditions", {})
         x0_vec = init_cond.get("x0", None)
         v0_vec = init_cond.get("v0", None)
 
         dofs = model.dofs
-        u = np.array(x0_vec) if x0_vec else np.zeros(dofs)
-        v = np.array(v0_vec) if v0_vec else np.zeros(dofs)
+
+        # --- תוקן: הגנה מפני קריסה בעת שינוי מספר קומות ---
+        # אם יש וקטור היסטוריה, נוודא שהוא באורך הנכון. אחרת - נתחיל מאפס.
+        if x0_vec and len(x0_vec) == dofs:
+            u = np.array(x0_vec, dtype=float)
+        else:
+            u = np.zeros(dofs)
+
+        if v0_vec and len(v0_vec) == dofs:
+            v = np.array(v0_vec, dtype=float)
+        else:
+            v = np.zeros(dofs)
+        # --------------------------------------------------
+
         a = np.zeros(dofs)
 
-        # 2. חישוב ריסון (Rayleigh)
+        # 3. חישוב ריסון
         zeta_vec = payload.get("damping_ratios", [0.0] * dofs)
         zeta_val = float(zeta_vec[0]) if zeta_vec else 0.02
 
         modal = ModalAnalyzer(model).run()
         w = modal.frequencies
-
-        # חישוב מקדמי אלפא/בטא
         w1 = w[0]
+        # טיפול במקרה של SDOF שבו יש רק תדר אחד
         w2 = w[1] if len(w) > 1 else w[0] * 3
 
         A_mat = np.array([[1 / (2 * w1), w1 / 2], [1 / (2 * w2), w2 / 2]])
@@ -76,14 +87,14 @@ class TimeSimulationService:
         model.C = alpha * model.M + beta * model.K
         M, K, C = model.M, model.K, model.C
 
-        # 3. כוח
+        # 4. כוח
         force_cfg = payload.get("force_function", {})
         f_amp = float(force_cfg.get("amp", 1000.0))
         f_freq = float(force_cfg.get("freq", 1.0))
         f_type = force_cfg.get("type", "pulse")
         f_dur = float(force_cfg.get("duration", 2.0))
 
-        # 4. Newmark-Beta Setup
+        # 5. Newmark-Beta
         gamma = 0.5
         beta_const = 0.25
 
@@ -100,33 +111,23 @@ class TimeSimulationService:
         except:
             K_hat_inv = np.linalg.pinv(K_hat)
 
-        # 5. INIT
-        yield {
-            "type": "INIT",
-            "dofs": dofs,
-            "periods": w.tolist(),
-            "duration": f_dur
-        }
+        # שידור ראשוני
+        yield {"type": "INIT", "dofs": dofs, "periods": w.tolist(), "duration": f_dur}
 
-        # 6. לולאת זמן
+        # 6. לולאת ריצה
         t = t0
         end_time = t0 + tf
 
         while t < end_time:
-            # וקטור כוח
             F = np.zeros(dofs)
             force_val = 0.0
-
             if f_type == "pulse":
-                if t <= f_dur:
-                    force_val = f_amp * np.sin(f_freq * t)
-            else:  # continuous
+                if t <= f_dur: force_val = f_amp * np.sin(f_freq * t)
+            else:
                 force_val = f_amp * np.sin(f_freq * t)
 
-            if dofs > 0:
-                F[-1] = force_val
+            if dofs > 0: F[-1] = force_val
 
-            # צעד חישוב
             term_M = a0 * u + a2 * v + a3 * a
             term_C = a1 * u + a4 * v + a5 * a
             P_hat = F + M @ term_M + C @ term_C
@@ -135,15 +136,14 @@ class TimeSimulationService:
             a_next = a0 * (u_next - u) - a2 * v - a3 * a
             v_next = v + dt * ((1.0 - gamma) * a + gamma * a_next)
 
-            # ג. שידור נתונים (התיקון כאן!)
             yield {
                 "type": "DATA",
                 "t": t,
-                "x": u_next[-1],  # עבור הגרף הכחול
-                "v": v_next[-1],  # <-- הוספתי: עבור הגרף הירוק!
-                "a": a_next[-1],  # עבור הגרף הכתום
+                "x": u_next[-1],
+                "v": v_next[-1],
+                "a": a_next[-1],
                 "all_x": u_next.tolist(),
-                "all_v": v_next.tolist()  # עבור resume
+                "all_v": v_next.tolist()
             }
 
             u, v, a = u_next, v_next, a_next

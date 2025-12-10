@@ -102,14 +102,17 @@ select {
     font-size: 0.8rem;
 }
 
+/* --- תוקן: כפתור קטן וממורכז --- */
 button.action-btn {
-    width: 100%;
-    padding: 10px;
+    width: auto;           /* ביטול רוחב מלא */
+    min-width: 120px;
+    display: block;
+    margin: 10px auto;     /* מירכוז */
+    padding: 10px 20px;
     border: none;
     border-radius: 6px;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 5px;
     transition: 0.2s;
     text-transform: uppercase;
     font-size: 0.8rem;
@@ -284,4 +287,42 @@ main {
     align-items: center;
     gap: 4px;
     cursor: pointer;
+}
+/* --- ניהול מצב נעילה (Sim Running) - פתרון מוחלט --- */
+
+/* 1. שינוי הסמן: רק כשנמצאים על הרקע הכללי או על אזור חסום */
+body.sim-running {
+    cursor: not-allowed;
+}
+
+/* 2. חסימה: נועלים אך ורק את תפריט הצד (ASIDE) */
+body.sim-running aside {
+    pointer-events: none; /* קליקים לא יעבדו כאן */
+    opacity: 0.7;         /* הבהרה כדי שיראה לא פעיל */
+    filter: grayscale(1); /* אפקט אפור להדגשת הנעילה */
+    transition: 0.3s;
+}
+
+/* 3. שחרור כפתורי השליטה: חייבים לעבוד גם כשהתפריט נעול */
+body.sim-running #btn-sim,
+body.sim-running #btn-reset {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+/* 4. הגנה על הגרפים: מוודאים שהחסימה לא זולגת לאזור הראשי (MAIN) */
+body.sim-running main {
+    pointer-events: auto !important; /* דורס כל הורשה מה-body */
+    cursor: default !important;      /* סמן רגיל */
+    opacity: 1 !important;
+}
+
+/* 5. וידוא סמנים בתוך הגרפים */
+body.sim-running main button,
+body.sim-running main input,
+body.sim-running .tab-btn,
+body.sim-running .legend-item {
+    cursor: pointer !important; /* סמן יד מצביעה */
 }
