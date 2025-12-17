@@ -1,5 +1,7 @@
 const API_URL = "http://127.0.0.1:8000";
 const WS_URL = "ws://127.0.0.1:8000/ws/simulate";
+const CLOUD_URL = "https://dynami-learn.onrender.com"
+
 
 let ws = null;
 let isRunning = false;
