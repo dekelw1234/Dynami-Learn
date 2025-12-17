@@ -1,6 +1,9 @@
 //const API_URL = "http://127.0.0.1:8000";
 //const WS_URL = "ws://127.0.0.1:8000/ws/simulate";
-const CLOUD_URL = "https://dynami-learn.onrender.com"
+// --- הגדרות חיבור לשרת (Render) ---
+// תיקון: הכתובת צריכה להיות ללא https בהתחלה, כי אנחנו מוסיפים אותו בשורות הבאות
+const CLOUD_URL = "dynami-learn.onrender.com";
+
 const API_URL = `https://${CLOUD_URL}`;
 const WS_URL = `wss://${CLOUD_URL}/ws/simulate`;
 
@@ -46,12 +49,10 @@ const quakePlugin = {
 Chart.register(quakePlugin);
 
 // --- INIT ---
-// --- INIT ---
 window.onload = function() {
     console.log("Initializing...");
 
     // 1. קודם כל: הגדרת ברירת מחדל ויצירת סליידרים לריסון
-    // חובה שזה יקרה לפני כל דבר אחר!
     const dofSelect = document.getElementById('dof-select');
     if(dofSelect) dofSelect.value = "2";
 
@@ -70,8 +71,6 @@ window.onload = function() {
     setTimeout(() => {
         calculateSystem();
     }, 500);
-
-    // הערה: מחקתי את הקוד של btn-calc כי יש כבר onclick="calculateSystem()" ב-HTML.
 };
 
 // --- TABS LOGIC ---
@@ -81,7 +80,7 @@ function initTabsAndCharts(periods) {
 
     header.innerHTML = '';
     body.innerHTML = '';
-    activeCharts.forEach(c => c.destroy());
+    activeCharts.forEach(c => c.chart.destroy()); // FIX: destroy chart instance properly
     activeCharts = [];
 
     periods.forEach((T, i) => {
@@ -150,13 +149,33 @@ function toggleSimulation() {
         isRunning = false;
         btn.innerText = "Start Simulation";
         btn.classList.remove("running");
-
-        // --- תוקן: שחרור נעילה ---
         document.body.classList.remove("sim-running");
     } else {
         startWebSocket();
     }
 }
+
+// --- פונקציה שהייתה חסרה והוספתי אותה ---
+function resetSimulation() {
+    if (ws) ws.close();
+    isRunning = false;
+
+    const btn = document.getElementById("btn-sim");
+    if(btn) {
+        btn.innerText = "Start Simulation";
+        btn.classList.remove("running");
+    }
+    document.body.classList.remove("sim-running");
+
+    activeCharts.forEach(obj => {
+        obj.chart.data.datasets.forEach(ds => ds.data = []);
+        obj.chart.update();
+    });
+
+    const dofs = parseInt(document.getElementById('dof-select').value);
+    drawFrame(new Array(dofs).fill(0));
+}
+// ------------------------------------------
 
 function startWebSocket() {
     if (ws) ws.close();
@@ -184,8 +203,6 @@ function startWebSocket() {
         isRunning = true;
         btn.innerText = "Stop Simulation";
         btn.classList.add("running");
-
-        // --- תוקן: הפעלת נעילה ---
         document.body.classList.add("sim-running");
 
         activeCharts.forEach(obj => {
@@ -252,19 +269,18 @@ function validateInput(id) {
 }
 
 function onDofChange() {
-        // --- תיקון: איפוס מלא למניעת התנגשות מימדים ---
-        resetSimulation();
-        // ---------------------------------------------
+    // התיקון: הפונקציה הזו קיימת עכשיו ולא תגרום לקריסה
+    resetSimulation();
 
-        const c = parseInt(document.getElementById('dof-select').value);
-        const d = document.getElementById('damping-container');
-        d.innerHTML = '';
-        for (let i = 1; i <= c; i++) {
-            d.innerHTML += `<div class="label-row"><label style="width:30px">ζ${i}:</label><div class="input-group" style="flex:1"><input type="range" id="slide-z${i}" min="0" max="1" step="0.01" value="0.02" oninput="syncZeta(${i},true)"><input type="number" id="num-z${i}" value="0.02" min="0" max="1" step="0.01" oninput="syncZeta(${i},false)"></div></div>`;
-        }
-        drawFrame(new Array(c).fill(0));
-        calculateSystem();
+    const c = parseInt(document.getElementById('dof-select').value);
+    const d = document.getElementById('damping-container');
+    d.innerHTML = '';
+    for (let i = 1; i <= c; i++) {
+        d.innerHTML += `<div class="label-row"><label style="width:30px">ζ${i}:</label><div class="input-group" style="flex:1"><input type="range" id="slide-z${i}" min="0" max="1" step="0.01" value="0.02" oninput="syncZeta(${i},true)"><input type="number" id="num-z${i}" value="0.02" min="0" max="1" step="0.01" oninput="syncZeta(${i},false)"></div></div>`;
     }
+    drawFrame(new Array(c).fill(0));
+    calculateSystem();
+}
 
 window.syncZeta = function(i, s) {
     const sl = document.getElementById(`slide-z${i}`), nm = document.getElementById(`num-z${i}`);
@@ -274,7 +290,12 @@ window.syncZeta = function(i, s) {
 function getDampingValues() {
     const c = parseInt(document.getElementById('dof-select').value);
     let a = [];
-    for (let i = 1; i <= c; i++) a.push(parseFloat(document.getElementById(`num-z${i}`).value));
+    for (let i = 1; i <= c; i++) {
+        // הוספתי בדיקה למקרה שהאלמנט עוד לא קיים
+        const el = document.getElementById(`num-z${i}`);
+        if(el) a.push(parseFloat(el.value));
+        else a.push(0.02);
+    }
     return a;
 }
 
@@ -315,15 +336,17 @@ function getModelPayload() {
     const E = parseFloat(document.getElementById('num-E').value);
     const M = parseFloat(document.getElementById('num-M').value);
 
-    // Recalculate I to be safe
     const t = document.getElementById('profile-type').value;
     let I = 0;
     if (t === 'circle') {
-        const r = parseFloat(document.getElementById('num-r').value);
-        I = Math.PI * Math.pow(r, 4) / 4;
+        const el = document.getElementById('num-r');
+        // הגנה מפני קריאה מוקדמת
+        I = el ? Math.PI * Math.pow(parseFloat(el.value), 4) / 4 : 0.003;
     } else {
-        const b = parseFloat(document.getElementById('num-b').value);
-        const h = parseFloat(document.getElementById('num-h').value);
+        const elB = document.getElementById('num-b');
+        const elH = document.getElementById('num-h');
+        const b = elB ? parseFloat(elB.value) : 0.4;
+        const h = elH ? parseFloat(elH.value) : 0.4;
         I = b * Math.pow(h, 3) / 12;
     }
 
@@ -357,11 +380,13 @@ async function calculateSystem() {
         document.getElementById("results-area").innerHTML = h;
     } catch (e) {
         console.error(e);
+        document.getElementById("results-area").innerHTML = "<span style='color:red'>Server Error. Try refreshing.</span>";
     }
 }
 
 function drawFrame(disps) {
     const c = document.getElementById("vizCanvas");
+    if(!c) return; // הגנה
     const ctx = c.getContext("2d");
     const r = c.parentElement.getBoundingClientRect();
     c.width = r.width;
