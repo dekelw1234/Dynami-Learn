@@ -16,12 +16,13 @@ origins = [
     "http://localhost:5500",
     "http://127.0.0.1:63342",
     "http://localhost:63342",
+    "https://dekelw1234.github.io",
     "null"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

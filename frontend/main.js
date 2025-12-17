@@ -1,7 +1,8 @@
-const API_URL = "http://127.0.0.1:8000";
-const WS_URL = "ws://127.0.0.1:8000/ws/simulate";
+//const API_URL = "http://127.0.0.1:8000";
+//const WS_URL = "ws://127.0.0.1:8000/ws/simulate";
 const CLOUD_URL = "https://dynami-learn.onrender.com"
-
+const API_URL = `https://${CLOUD_URL}`;
+const WS_URL = `wss://${CLOUD_URL}/ws/simulate`;
 
 let ws = null;
 let isRunning = false;
@@ -45,24 +46,32 @@ const quakePlugin = {
 Chart.register(quakePlugin);
 
 // --- INIT ---
+// --- INIT ---
 window.onload = function() {
+    console.log("Initializing...");
+
+    // 1. קודם כל: הגדרת ברירת מחדל ויצירת סליידרים לריסון
+    // חובה שזה יקרה לפני כל דבר אחר!
+    const dofSelect = document.getElementById('dof-select');
+    if(dofSelect) dofSelect.value = "2";
+
+    onDofChange(); // יוצר את ה-HTML של הריסון (z1, z2)
+
+    // 2. רק עכשיו אפשר לסנכרן את שאר הכפתורים
     syncInputs('E', true);
     syncInputs('M', true);
     syncInputs('F', true);
     syncInputs('dur', true);
 
+    // 3. עדכון פרופיל גיאומטרי
     updateProfileType();
-    document.getElementById('dof-select').value = "2";
-    onDofChange();
 
-    setTimeout(calculateSystem, 500);
+    // 4. חישוב ראשוני (עם השהייה קטנה לביטחון שהשרת עונה)
+    setTimeout(() => {
+        calculateSystem();
+    }, 500);
 
-    // --- תוקן: האזנה לכפתור חישוב המטריצות ---
-    // הנחה: לכפתור ב-HTML קוראים btn-calc. אם לא, הוסף לו id="btn-calc"
-    const calcBtn = document.getElementById("btn-calc");
-    if (calcBtn) {
-        calcBtn.onclick = calculateSystem;
-    }
+    // הערה: מחקתי את הקוד של btn-calc כי יש כבר onclick="calculateSystem()" ב-HTML.
 };
 
 // --- TABS LOGIC ---
