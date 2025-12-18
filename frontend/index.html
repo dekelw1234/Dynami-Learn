@@ -33,7 +33,48 @@
             overflow-y: auto;
             flex-shrink: 0;
             z-index: 10;
+            position: relative; /* חשוב עבור ה-Tooltip */
+            transition: 0.3s;
         }
+
+        /* --- סגנון לאלמנטים נעולים --- */
+        aside.locked {
+            cursor: not-allowed;
+        }
+
+        aside.locked input,
+        aside.locked select,
+        aside.locked .calc-btn {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        /* --- התיקון: הודעה עדינה ומקצועית --- */
+        aside.locked:hover::after {
+            content: "🔒 Simulation active. Press RESET to edit.";
+            position: absolute;
+            bottom: 40px; /* מופיע למטה ליד הכפתורים */
+            left: 50%;
+            transform: translateX(-50%);
+
+            /* עיצוב עדין יותר */
+            background: rgba(15, 23, 42, 0.95); /* כהה מאוד */
+            border: 1px solid var(--info); /* מסגרת כתומה */
+            color: var(--info);
+
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+            animation: slideUp 0.2s ease-out;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
         h1 { margin: 0; color: var(--accent); font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
 
@@ -160,7 +201,7 @@
 </head>
 <body>
 
-<aside>
+<aside id="sidebar">
     <h1>Dynami-Learn</h1>
     <button class="fs-btn" onclick="toggleFullScreen()">⛶ Full Screen</button>
 
@@ -201,7 +242,7 @@
     <div class="credit-footer">Powered by <strong>Dekel winkler & Jeremy scalais</strong></div>
 </aside>
 <main>
-    <div class="card"><div class="card-header">VISUALIZER (AUTO-SCALED)</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
+    <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
     <div class="card">
         <div class="card-header">SYSTEM PROPERTIES</div>
         <div class="card-body matrix-container" id="results-area">System not calculated yet.</div>
@@ -231,24 +272,19 @@
     const WS_URL = `${WS_PROTOCOL}://${BASE_URL}/ws/simulate`;
     console.log(`Running in ${isLocal ? "LOCAL" : "CLOUD"} mode. Connected to: ${API_URL}`);
 
-    // --- לוגיקת מסך מלא ---
     function toggleFullScreen() {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
+            document.documentElement.requestFullscreen().catch(err => console.log(err));
         } else {
             if (document.exitFullscreen) document.exitFullscreen();
         }
     }
 
-    // --- משתנים גלובליים ---
     let ws = null, isRunning = false, isPaused = false;
     let systemPeriods = [], activeCharts = [], maxAbsDisp = 0.00001;
     let maxTimeRecorded = 0, isAutoScroll = true;
     let lastState = { t:0, all_x:null, all_v:null };
 
-    // --- טקסטים תמציתיים ---
     const tooltipsData = {
         "stories": { title: "Stories (DOF)", text: "• SDOF (1): Single equation.\n• MDOF (2-3): Multiple coupled equations." },
         "E": { title: "Young's Modulus (E)", text: "• Material stiffness (Stress/Strain).\n• Higher E = Stiffer building." },
@@ -264,7 +300,6 @@
         div.className = 'info-tooltip';
         const content = tooltipsData[key] || { title: "Info", text: "..." };
         div.innerHTML = `<div class="tooltip-header"><span>${content.title}</span><button class="tooltip-close" onclick="closeAllTooltips()">✕</button></div><div class="tooltip-content">${content.text}</div>`;
-
         const btnRect = event.target.getBoundingClientRect();
         let top = window.scrollY + btnRect.top;
         let left = window.scrollX + btnRect.left + 20;
@@ -278,17 +313,8 @@
         let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         const header = el.querySelector(".tooltip-header");
         if (header) header.onmousedown = dragMouseDown;
-        function dragMouseDown(e) {
-            e = e || window.event; e.preventDefault();
-            pos3 = e.clientX; pos4 = e.clientY;
-            document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
-        }
-        function elementDrag(e) {
-            e = e || window.event; e.preventDefault();
-            pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
-            pos3 = e.clientX; pos4 = e.clientY;
-            el.style.top = (el.offsetTop - pos2) + "px"; el.style.left = (el.offsetLeft - pos1) + "px";
-        }
+        function dragMouseDown(e) { e = e || window.event; e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+        function elementDrag(e) { e = e || window.event; e.preventDefault(); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; el.style.top = (el.offsetTop - pos2) + "px"; el.style.left = (el.offsetLeft - pos1) + "px"; }
         function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
     }
 
@@ -298,28 +324,37 @@
     const quakePlugin = { id: 'quakeLine', afterDraw: (chart) => { /* simplified */ } };
     Chart.register(quakePlugin);
 
-    // --- INIT (עם הגנות) ---
     window.onload = function() {
         console.log("Initializing...");
         const dofSelect = document.getElementById('dof-select');
-        if (dofSelect) {
-            dofSelect.value = "2";
-            onDofChange(); // זה יוצר את הסליידרים של הריסון
-        }
-        // רק אחרי שיצרנו אותם, מסנכרנים
+        if (dofSelect) { dofSelect.value = "2"; onDofChange(); }
         syncInputs('E', true); syncInputs('M', true); syncInputs('F', true); syncInputs('dur', true);
         updateProfileType();
         setTimeout(calculateSystem, 500);
     };
 
+    // --- בקרת נעילה (Locking Mechanism) ---
+    function setControlsState(shouldLock) {
+        const sidebar = document.getElementById('sidebar');
+        if (shouldLock) {
+            sidebar.classList.add('locked');
+        } else {
+            sidebar.classList.remove('locked');
+        }
+    }
+
     function toggleSimulation() {
         const btn = document.getElementById("btn-sim");
         if (isRunning) {
+            // עוצרים (Pause)
             if (ws) ws.close();
             isRunning = false; isPaused = true;
             btn.innerText = "Resume"; btn.className = "action-btn start-btn paused";
             document.body.classList.remove("sim-running");
+            // הערה: אנחנו לא משחררים את הנעילה כאן!
         } else {
+            // מתחילים (Start / Resume)
+            setControlsState(true); // נועלים הכל
             startWebSocket();
         }
     }
@@ -327,6 +362,10 @@
     function resetSimulation() {
         if (ws) ws.close();
         isRunning = false; isPaused = false;
+
+        // משחררים את הנעילה
+        setControlsState(false);
+
         const btn = document.getElementById("btn-sim");
         btn.innerText = "Start"; btn.className = "action-btn start-btn";
         document.body.classList.remove("sim-running");
@@ -338,11 +377,16 @@
         drawFrame(new Array(dofs).fill(0));
     }
 
-    function startWebSocket() {
+    async function startWebSocket() {
         if (ws) ws.close();
-        calculateSystem();
+
+        // שלב קריטי: עדכון המטריצות על המסך והכנת הנתונים החדשים
+        await calculateSystem();
+
         const startT = isPaused ? lastState.t : 0;
         const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
+
+        // כאן אנחנו שולחים את הפרמטרים *הנוכחיים* (מהסליידרים)
         const payload = {
             model_req: getModelPayload(),
             sim_req: {
@@ -435,7 +479,16 @@
                 options: {
                     responsive: true, maintainAspectRatio: false, animation: false,
                     scales: {
-                        x: { type: 'linear', min: 0, max: 20, grid: {color:'#334155'}, title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'}, customPeriod: T, ticks: {stepSize: 1} },
+                        x: {
+                            type: 'linear', min: 0, max: 20, grid: {color:'#334155'},
+                            title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'},
+                            customPeriod: T,
+                            ticks: {
+                                color: '#94a3b8',
+                                stepSize: 1,
+                                callback: function(value) { return Math.round(value); }
+                            }
+                        },
                         y: { grid: {color:'#334155'}, ticks: { color:'#94a3b8', callback: (v) => Number(v).toExponential(1) } }
                     },
                     plugins: { legend: {display:false} }
