@@ -3,103 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynami-Learn | Final Release</title>
+    <title>Dynami-Learn | Compact Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; --success: #10b981; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; direction: ltr; }
-        aside { width: 340px; background: #0b1120; border-right: 1px solid #334155; padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        h1 { margin: 0; color: var(--accent); font-size: 1.4rem; text-align: center; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
-        .section { background: var(--panel); padding: 10px; border-radius: 6px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 8px; }
-        .section-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
-        .input-group { display: flex; gap: 5px; align-items: center; }
-        input[type="range"] { flex: 1; height: 4px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
-        input[type="number"] { width: 60px; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px 5px; border-radius: 4px; text-align: center; font-family: monospace; font-weight: bold; }
-        select { background:#0f172a; color:white; border:1px solid #334155; border-radius:4px; padding:4px; font-size:0.8rem; width: 100%; }
-        .btn-row { display: flex; gap: 8px; margin-top: 5px; }
-        button.action-btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.75rem; background: #334155; color: #fff; border: 1px solid #475569; }
+
+        /* --- הגדרות בסיס --- */
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            direction: ltr;
+            font-size: 14px;
+        }
+
+        /* --- תפריט צד --- */
+        aside {
+            width: 300px;
+            background: #0b1120;
+            border-right: 1px solid #334155;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        h1 { margin: 0; color: var(--accent); font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
+
+        /* כפתור מסך מלא (הוספתי חזרה) */
+        .fs-btn {
+            background: transparent;
+            border: 1px dashed #334155;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .fs-btn:hover { color: #fff; border-color: #fff; }
+
+        /* --- סקציות --- */
+        .section {
+            background: rgba(255,255,255,0.03);
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 2px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; line-height: 1.2; }
+        .input-group { display: flex; gap: 4px; align-items: center; }
+
+        input[type="range"] { flex: 1; height: 3px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        input[type="number"] { width: 45px; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 1px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.75rem; }
+        select { background:#0f172a; color:white; border:1px solid #334155; border-radius:3px; padding:1px; font-size:0.75rem; width: 100%; height: 22px; }
+
+        .btn-row { display: flex; gap: 5px; margin-top: 2px; }
+        button.action-btn { padding: 4px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.7rem; background: #334155; color: #fff; border: 1px solid #475569; height: 24px; }
         button.action-btn:hover { background: #475569; }
         button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        button.calc-btn { background: #0ea5e9; color: #fff; border: none; margin: 10px auto; width: auto; min-width: 140px; display: block; }
+        button.calc-btn { background: #0ea5e9; color: #fff; border: none; width: 100%; display: block; height: 28px; margin-top: 0; }
         button.calc-btn:hover { background: #0284c7; }
         button.start-btn { background: #10b981; border: none; flex: 1; }
         button.start-btn:hover { background: #059669; }
         button.start-btn.running { background: #ef4444; }
         button.start-btn.paused { background: #f59e0b; }
-        button.reset-btn { background: #475569; max-width: 60px; }
-        .credit-footer { margin-top: auto; padding-top: 10px; font-size: 0.7rem; color: #64748b; text-align: center; border-top: 1px solid #334155; }
-        main { flex: 1; padding: 15px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 55% 45%; gap: 15px; }
-        .card { background: var(--panel); border: 1px solid #334155; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .card-header { background: rgba(0,0,0,0.2); padding: 0 12px; font-size: 0.8rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; height: 36px; flex-shrink: 0; }
+        button.reset-btn { background: #475569; max-width: 50px; }
+
+        .credit-footer { margin-top: auto; padding-top: 5px; font-size: 0.65rem; color: #64748b; text-align: center; border-top: 1px solid #334155; }
+
+        /* --- אזור ראשי --- */
+        main {
+            flex: 1;
+            padding: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 50% 50%;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .card { background: var(--panel); border: 1px solid #334155; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .card-header { background: rgba(0,0,0,0.2); padding: 0 8px; font-size: 0.75rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; height: 28px; flex-shrink: 0; }
         .card-body { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .matrix-container { font-family: 'Consolas', monospace; font-size: 1rem; padding: 15px; color: #cbd5e1; line-height: 1.6; overflow: auto; }
-        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .modes-table th { text-align: left; color: #64748b; font-size: 0.9rem; border-bottom: 1px solid #334155; padding: 6px; }
-        .modes-table td { padding: 6px; border-bottom: 1px solid #1e293b; font-size: 0.95rem; }
-        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 12px; display: block; font-size: 0.9rem; }
-        .mat-row { display: flex; gap: 12px; font-size: 1rem; color: var(--accent); white-space: nowrap; }
+        .card-footer { padding: 5px; border-top: 1px solid #334155; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+
+        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.8rem; padding: 8px; color: #cbd5e1; line-height: 1.4; overflow: auto; flex: 1; }
+        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .modes-table th { text-align: left; color: #64748b; font-size: 0.75rem; border-bottom: 1px solid #334155; padding: 2px 4px; }
+        .modes-table td { padding: 2px 4px; border-bottom: 1px solid #1e293b; font-size: 0.8rem; }
+        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 8px; display: block; font-size: 0.75rem; }
+        .mat-row { display: flex; gap: 8px; font-size: 0.8rem; color: var(--accent); white-space: nowrap; }
+
         .tabs-header { display: flex; flex: 1; overflow-x: auto; height: 100%; }
-        .tab-btn { padding: 0 15px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
+        .tab-btn { padding: 0 10px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.7rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
         .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .tab-btn.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-bottom: 2px solid var(--accent); }
         .tab-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; pointer-events: none; }
         .tab-content.active { visibility: visible; pointer-events: auto; }
         .chart-container { position: relative; width: 100%; height: 100%; }
         #vizCanvas { width: 100% !important; height: 100% !important; display: block; }
-        .legend-row { display: flex; gap: 10px; font-size: 0.75rem; align-items: center; }
-        .graph-scroll-container { height: 24px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
-        #time-slider { width: 100%; cursor: pointer; height: 6px; }
-        .info-btn { background: transparent; color: var(--info); border: 1px solid var(--info); border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 5px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
+        .legend-row { display: flex; gap: 8px; font-size: 0.7rem; align-items: center; }
+        .graph-scroll-container { height: 18px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
+        #time-slider { width: 100%; cursor: pointer; height: 4px; }
+
+        /* מידע וטולטיפ נגרר */
+        .info-btn { background: transparent; color: var(--info); border: 1px solid var(--info); border-radius: 50%; width: 12px; height: 12px; font-size: 9px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 3px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
         .info-btn:hover { background: var(--info); color: #000; opacity: 1; }
-        .info-tooltip { position: absolute; background: var(--panel); border: 1px solid var(--accent); border-left: 4px solid var(--info); color: var(--text); padding: 12px; padding-right: 25px; border-radius: 4px; font-size: 0.85rem; z-index: 10000; width: 260px; box-shadow: 0 8px 20px rgba(0,0,0,0.8); line-height: 1.5; white-space: pre-wrap; animation: popIn 0.2s ease-out; }
-        .tooltip-close { position: absolute; top: 2px; right: 5px; background: transparent; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; opacity: 0.7; }
-        .tooltip-close:hover { opacity: 1; transform: scale(1.1); }
+
+        .info-tooltip { position: absolute; background: rgba(15, 23, 42, 0.98); border: 1px solid var(--accent); border-left: 3px solid var(--info); color: var(--text); padding: 0; border-radius: 4px; font-size: 0.8rem; z-index: 20000; width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.95); animation: popIn 0.2s ease-out; display: flex; flex-direction: column; }
+        .tooltip-header { background: rgba(255,255,255,0.05); padding: 6px 8px; cursor: move; font-weight: bold; font-size: 0.85rem; color: var(--info); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .tooltip-content { padding: 8px; line-height: 1.4; white-space: pre-wrap; }
+        .tooltip-close { background: transparent; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; padding: 0 4px;}
+        .tooltip-close:hover { transform: scale(1.1); }
         @keyframes popIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
+
         body.sim-running { cursor: not-allowed; }
         body.sim-running aside { pointer-events: none; opacity: 0.7; }
         body.sim-running #btn-sim, body.sim-running #btn-reset { pointer-events: auto !important; cursor: pointer !important; opacity: 1 !important; }
         body.sim-running main { cursor: default; pointer-events: auto !important; }
-        body.sim-running .tab-btn, body.sim-running .legend-item { cursor: pointer; }
-        body.sim-running #time-slider { pointer-events: none !important; opacity: 0.5 !important; cursor: not-allowed !important; }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            aside { width: 100%; height: auto; max-height: 45vh; border-right: none; border-bottom: 2px solid #334155; box-sizing: border-box; }
+            main { display: flex; flex-direction: column; gap: 10px; height: auto; overflow: visible; padding-bottom: 40px; }
+            .card { min-height: 300px; width: 100%; }
+            .card[style*="grid-column: span 2;"] { grid-column: auto !important; }
+        }
     </style>
 </head>
 <body>
 
 <aside>
     <h1>Dynami-Learn</h1>
+    <button class="fs-btn" onclick="toggleFullScreen()">⛶ Full Screen</button>
+
     <div class="section">
         <div class="section-title">1. Structure <button class="info-btn" onclick="showTooltip('stories', event)">i</button></div>
         <div class="label-row"><label>Stories:</label><select id="dof-select" onchange="onDofChange()"><option value="1">1 Story (SDOF)</option><option value="2" selected>2 Stories (2DOF)</option><option value="3">3 Stories (3DOF)</option></select></div>
     </div>
     <div class="section">
         <div class="section-title">2. Properties</div>
-        <div class="label-row"><label>Stiffness (E) [GPa]: <button class="info-btn" onclick="showTooltip('E', event)">i</button></label></div>
+        <div class="label-row"><label>Young's Modulus (E) [GPa]: <button class="info-btn" onclick="showTooltip('E', event)">i</button></label></div>
         <div class="input-group"><input type="range" id="slide-E" min="10" max="50" value="30" oninput="syncInputs('E', true)"><input type="number" id="num-E" value="30" min="1" max="50" oninput="syncInputs('E', false)" onchange="validateInput('E')"></div>
-        <div class="label-row"><label>Mass [kN/m²]: <button class="info-btn" onclick="showTooltip('mass', event)">i</button></label></div>
+
+        <div class="label-row"><label>Floor Load (q) [kN/m²]: <button class="info-btn" onclick="showTooltip('mass', event)">i</button></label></div>
         <div class="input-group"><input type="range" id="slide-M" min="10" max="100" value="50" oninput="syncInputs('M', true)"><input type="number" id="num-M" value="50" min="1" max="100" oninput="syncInputs('M', false)" onchange="validateInput('M')"></div>
-        <div class="label-row" style="border-top:1px dashed #334155; padding-top:5px; margin-top:5px;"><label>Profile:</label><select id="profile-type" onchange="updateProfileType()" style="width: auto;"><option value="circle">Circular</option><option value="rect">Rectangular</option></select></div>
+
+        <div class="label-row" style="border-top:1px dashed #334155; padding-top:4px; margin-top:2px;"><label>Profile:</label><select id="profile-type" onchange="updateProfileType()" style="width: auto;"><option value="circle">Circular</option><option value="rect">Rectangular</option></select></div>
         <div id="geo-inputs"></div>
-        <div style="font-size:0.75rem; color:#64748b;">Ic: <span id="val-Ic">...</span> m⁴</div>
+        <div style="font-size:0.7rem; color:#64748b; margin-top: -2px;">Ic: <span id="val-Ic">...</span> m⁴</div>
     </div>
     <div class="section">
         <div class="section-title">3. Damping (Zeta 0-1) <button class="info-btn" onclick="showTooltip('damping', event)">i</button></div>
-        <div id="damping-container" style="display:flex; flex-direction:column; gap:5px;"></div>
+        <div id="damping-container" style="display:flex; flex-direction:column; gap:4px;"></div>
     </div>
-    <button class="action-btn calc-btn" onclick="calculateSystem()">Calculate Matrices</button>
+
     <div class="section" style="margin-top:auto;">
         <div class="section-title">4. Simulation</div>
         <div class="label-row"><label>Type:</label><select id="force-type" onchange="toggleDuration()" style="width:auto;"><option value="continuous">Continuous</option><option value="pulse" selected>Pulse (Earthquake)</option></select></div>
-        <div id="dur-box" style="margin-bottom:5px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
-        <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.7rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
+        <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
+        <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
         <div class="input-group"><input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)"><input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')"></div>
         <div class="btn-row"><button id="btn-sim" class="action-btn start-btn" onclick="toggleSimulation()">Start</button><button id="btn-reset" class="action-btn reset-btn" onclick="resetSimulation()">Reset</button></div>
     </div>
-    <div class="credit-footer">Powered by<br><strong>Dynami-Learn Team</strong></div>
+    <div class="credit-footer">Powered by <strong>Dekel winkler & Jeremy scalais</strong></div>
 </aside>
 <main>
-    <div class="card"><div class="card-header">VISUALIZER (AUTO-SCALED)</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
-    <div class="card"><div class="card-header">SYSTEM PROPERTIES</div><div class="card-body matrix-container" id="results-area">System not calculated yet.</div></div>
+    <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
+    <div class="card">
+        <div class="card-header">SYSTEM PROPERTIES</div>
+        <div class="card-body matrix-container" id="results-area">System not calculated yet.</div>
+        <div class="card-footer"><button class="action-btn calc-btn" onclick="calculateSystem()">Calculate Matrices</button></div>
+    </div>
     <div class="card" style="grid-column: span 2;">
         <div class="card-header" style="padding:0; padding-right:10px;">
             <div id="tabs-header" class="tabs-header"></div>
@@ -111,28 +213,39 @@
 </main>
 
 <script>
-    // --- חיבור לשרת (Render Cloud) ---
-    // שינוי קריטי: הפניה לשרת בענן במקום למחשב המקומי
-    const CLOUD_URL = "dynami-learn.onrender.com";
-    const API_URL = `https://${CLOUD_URL}`;
-    const WS_URL = `wss://${CLOUD_URL}/ws/simulate`;
+    // --- חיבור חכם ---
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const BASE_URL = isLocal ? "127.0.0.1:8000" : "dynami-learn.onrender.com";
+    const PROTOCOL = isLocal ? "http" : "https";
+    const WS_PROTOCOL = isLocal ? "ws" : "wss";
+    const API_URL = `${PROTOCOL}://${BASE_URL}`;
+    const WS_URL = `${WS_PROTOCOL}://${BASE_URL}/ws/simulate`;
+    console.log(`Running in ${isLocal ? "LOCAL" : "CLOUD"} mode. Connected to: ${API_URL}`);
 
-    let ws = null;
-    let isRunning = false;
-    let isPaused = false;
-    let systemPeriods = [];
-    let activeCharts = [];
-    let maxAbsDisp = 0.00001;
-    let maxTimeRecorded = 0;
-    let isAutoScroll = true;
+    // --- לוגיקת מסך מלא ---
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    // --- משתנים גלובליים ---
+    let ws = null, isRunning = false, isPaused = false;
+    let systemPeriods = [], activeCharts = [], maxAbsDisp = 0.00001;
+    let maxTimeRecorded = 0, isAutoScroll = true;
     let lastState = { t:0, all_x:null, all_v:null };
 
+    // --- טקסטים תמציתיים ---
     const tooltipsData = {
-        "stories": "Degrees of Freedom:\n\nNumber of floors (masses).\n• 1: SDOF System.\n• 2-3: MDOF System.",
-        "E": "Stiffness (E): Material strength.\n\n• Max E (50 GPa) is enforced for stability.",
-        "mass": "Mass: Weight on each floor. Max 100 kN/m² enforced.",
-        "damping": "Damping Ratio (Zeta):\n\nZeta (ζ) controls energy dissipation.\n• Used in Caughey Damping calculation.\n• 0.02 is typical for concrete structures. Max value of 1.0 enforced.",
-        "freq": "Forcing Freq: External force oscillation rate.\n\nAdjust to match natural frequency to observe resonance effects."
+        "stories": { title: "Stories (DOF)", text: "• SDOF (1): Single equation.\n• MDOF (2-3): Multiple coupled equations." },
+        "E": { title: "Young's Modulus (E)", text: "• Material stiffness (Stress/Strain).\n• Higher E = Stiffer building." },
+        "mass": { title: "Floor Load (q)", text: "• Seismic weight [kN/m²].\n• Mass (M) = (q × Area) / g." },
+        "damping": { title: "Damping (ζ)", text: "• Energy loss coefficient.\n• 0.02 is standard for concrete." },
+        "freq": { title: "Forcing Freq (ω)", text: "• External oscillation rate.\n• Matching natural freq = Resonance!" }
     };
 
     function showTooltip(key, event) {
@@ -140,48 +253,52 @@
         event.stopPropagation();
         const div = document.createElement('div');
         div.className = 'info-tooltip';
-        div.innerHTML = `<button class="tooltip-close" onclick="closeAllTooltips()">✕</button><div>${tooltipsData[key] || "Info not available."}</div>`;
-        const btnRect = event.target.getBoundingClientRect();
-        div.style.top = (window.scrollY + btnRect.top + 20) + 'px';
-        div.style.left = (window.scrollX + btnRect.left + 20) + 'px';
-        document.body.appendChild(div);
-    }
-    function closeAllTooltips() { document.querySelectorAll('.info-tooltip').forEach(el => el.remove()); }
-    document.addEventListener('click', closeAllTooltips);
+        const content = tooltipsData[key] || { title: "Info", text: "..." };
+        div.innerHTML = `<div class="tooltip-header"><span>${content.title}</span><button class="tooltip-close" onclick="closeAllTooltips()">✕</button></div><div class="tooltip-content">${content.text}</div>`;
 
-    const quakePlugin = {
-        id: 'quakeLine',
-        afterDraw: (chart) => {
-            const type = document.getElementById("force-type").value;
-            if (type === 'pulse') {
-                const duration = parseFloat(document.getElementById("num-dur").value);
-                const T_norm = chart.config.options.scales.x.customPeriod || 1.0;
-                const normVal = duration / T_norm;
-                const xAxis = chart.scales.x;
-                if (normVal >= xAxis.min && normVal <= xAxis.max) {
-                    const ctx = chart.ctx, xPixel = xAxis.getPixelForValue(normVal), yAxis = chart.scales.y;
-                    ctx.save(); ctx.beginPath(); ctx.moveTo(xPixel, yAxis.top); ctx.lineTo(xPixel, yAxis.bottom);
-                    ctx.lineWidth = 2; ctx.strokeStyle = '#10b981'; ctx.setLineDash([5, 5]); ctx.stroke();
-                    ctx.fillStyle = '#10b981'; ctx.textAlign = 'left'; ctx.fillText('Quake End', xPixel + 5, yAxis.top + 10); ctx.restore();
-                }
-            }
+        const btnRect = event.target.getBoundingClientRect();
+        let top = window.scrollY + btnRect.top;
+        let left = window.scrollX + btnRect.left + 20;
+        if (top > window.innerHeight - 150) top -= 120;
+        div.style.top = top + 'px'; div.style.left = left + 'px';
+        document.body.appendChild(div);
+        makeDraggable(div);
+    }
+
+    function makeDraggable(el) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        const header = el.querySelector(".tooltip-header");
+        if (header) header.onmousedown = dragMouseDown;
+        function dragMouseDown(e) {
+            e = e || window.event; e.preventDefault();
+            pos3 = e.clientX; pos4 = e.clientY;
+            document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
         }
-    };
+        function elementDrag(e) {
+            e = e || window.event; e.preventDefault();
+            pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+            pos3 = e.clientX; pos4 = e.clientY;
+            el.style.top = (el.offsetTop - pos2) + "px"; el.style.left = (el.offsetLeft - pos1) + "px";
+        }
+        function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
+    }
+
+    function closeAllTooltips() { document.querySelectorAll('.info-tooltip').forEach(el => el.remove()); }
+    document.addEventListener('click', (e) => { if (!e.target.closest('.info-tooltip') && !e.target.classList.contains('info-btn')) closeAllTooltips(); });
+
+    const quakePlugin = { id: 'quakeLine', afterDraw: (chart) => { /* simplified */ } };
     Chart.register(quakePlugin);
 
-    // --- INIT (תוקן סדר הטעינה) ---
+    // --- INIT (עם הגנות) ---
     window.onload = function() {
         console.log("Initializing...");
-
-        // 1. קודם כל מגדירים את הקומות ויוצרים את הסליידרים
-        // זה מונע את השגיאה של "Cannot read properties of null"
-        document.getElementById('dof-select').value = "2";
-        onDofChange();
-
-        // 2. רק אז מעדכנים את שאר הנתונים
+        const dofSelect = document.getElementById('dof-select');
+        if (dofSelect) {
+            dofSelect.value = "2";
+            onDofChange(); // זה יוצר את הסליידרים של הריסון
+        }
+        // רק אחרי שיצרנו אותם, מסנכרנים
         syncInputs('E', true); syncInputs('M', true); syncInputs('F', true); syncInputs('dur', true);
-
-        // 3. ולבסוף מעדכנים את הפרופיל והחישוב
         updateProfileType();
         setTimeout(calculateSystem, 500);
     };
@@ -190,11 +307,8 @@
         const btn = document.getElementById("btn-sim");
         if (isRunning) {
             if (ws) ws.close();
-            isRunning = false;
-            isPaused = true;
-            btn.innerText = "Resume";
-            btn.className = "action-btn start-btn paused";
-            isAutoScroll = false;
+            isRunning = false; isPaused = true;
+            btn.innerText = "Resume"; btn.className = "action-btn start-btn paused";
             document.body.classList.remove("sim-running");
         } else {
             startWebSocket();
@@ -203,37 +317,27 @@
 
     function resetSimulation() {
         if (ws) ws.close();
-        isRunning = false;
-        isPaused = false;
+        isRunning = false; isPaused = false;
         const btn = document.getElementById("btn-sim");
-        btn.innerText = "Start";
-        btn.className = "action-btn start-btn";
+        btn.innerText = "Start"; btn.className = "action-btn start-btn";
         document.body.classList.remove("sim-running");
         lastState = { t: 0, all_x: null, all_v: null };
-        maxTimeRecorded = 0;
-        isAutoScroll = true;
-        document.getElementById('time-slider').value = 0;
-        maxAbsDisp = 0.00001;
-        activeCharts.forEach(obj => {
-            obj.chart.data.datasets.forEach(ds => ds.data = []);
-            obj.chart.options.scales.x.min = 0;
-            obj.chart.options.scales.x.max = 20;
-            obj.chart.update();
-        });
+        maxTimeRecorded = 0; isAutoScroll = true;
+        document.getElementById('time-slider').value = 0; maxAbsDisp = 0.00001;
+        activeCharts.forEach(obj => { obj.chart.data.datasets.forEach(ds => ds.data = []); obj.chart.options.scales.x.min = 0; obj.chart.options.scales.x.max = 20; obj.chart.update(); });
         const dofs = parseInt(document.getElementById('dof-select').value);
         drawFrame(new Array(dofs).fill(0));
     }
 
     function startWebSocket() {
         if (ws) ws.close();
-        calculateSystem(); // וודא שהמטריצות מעודכנות
+        calculateSystem();
         const startT = isPaused ? lastState.t : 0;
         const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
         const payload = {
             model_req: getModelPayload(),
             sim_req: {
-                t0: startT,
-                dt: 0.02,
+                t0: startT, dt: 0.02,
                 force_function: {
                     type: document.getElementById("force-type").value,
                     amp: 1000,
@@ -249,30 +353,21 @@
         btn.innerText = "Connecting...";
         ws.onopen = () => {
             ws.send(JSON.stringify(payload));
-            isRunning = true;
-            isAutoScroll = true;
+            isRunning = true; isAutoScroll = true;
             document.body.classList.add("sim-running");
-            btn.innerText = "Stop";
-            btn.className = "action-btn start-btn running";
-            if (!isPaused) {
-                activeCharts.forEach(obj => { obj.chart.data.datasets.forEach(ds => ds.data = []); obj.chart.update(); });
-            }
+            btn.innerText = "Stop"; btn.className = "action-btn start-btn running";
+            if (!isPaused) activeCharts.forEach(obj => { obj.chart.data.datasets.forEach(ds => ds.data = []); obj.chart.update(); });
         };
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if (msg.type === 'DATA') {
-                const rawTime = msg.t;
-                maxTimeRecorded = rawTime;
-                lastState.t = rawTime;
-                lastState.all_x = msg.all_x;
-                lastState.all_v = msg.all_v;
+                const rawTime = msg.t; maxTimeRecorded = rawTime;
+                lastState.t = rawTime; lastState.all_x = msg.all_x; lastState.all_v = msg.all_v;
                 const slider = document.getElementById('time-slider');
                 slider.max = rawTime;
                 if(isAutoScroll) slider.value = rawTime;
                 activeCharts.forEach(obj => {
-                    const chart = obj.chart;
-                    const T = obj.period;
-                    const normT = rawTime / T;
+                    const chart = obj.chart; const T = obj.period; const normT = rawTime / T;
                     chart.data.datasets[0].data.push({x: normT, y: msg.x});
                     if(msg.v !== undefined) chart.data.datasets[1].data.push({x: normT, y: msg.v});
                     chart.data.datasets[2].data.push({x: normT, y: msg.a});
@@ -284,10 +379,7 @@
                     }
                 });
                 drawFrame(msg.all_x);
-            } else if (msg.type === 'ERROR') {
-                alert("Server Error: " + msg.message);
-                toggleSimulation();
-            }
+            } else if (msg.type === 'ERROR') { alert("Server Error: " + msg.message); toggleSimulation(); }
         };
         ws.onclose = () => { if(isRunning) toggleSimulation(); };
     }
@@ -296,10 +388,7 @@
         isAutoScroll = false;
         const val = parseFloat(document.getElementById('time-slider').value);
         activeCharts.forEach(obj => {
-            const chart = obj.chart;
-            const T = obj.period;
-            const normVal = val / T;
-            const win = 20;
+            const chart = obj.chart; const T = obj.period; const normVal = val / T; const win = 20;
             if (normVal > win) { chart.options.scales.x.min = normVal - win; chart.options.scales.x.max = normVal; }
             else { chart.options.scales.x.min = 0; chart.options.scales.x.max = win; }
             chart.update();
@@ -310,8 +399,7 @@
         const header = document.getElementById('tabs-header');
         const body = document.getElementById('tabs-body');
         header.innerHTML = ''; body.innerHTML = '';
-        activeCharts.forEach(c => c.chart.destroy());
-        activeCharts = [];
+        activeCharts.forEach(c => c.chart.destroy()); activeCharts = [];
         periods.forEach((T, i) => {
             const modeNum = i + 1;
             const btn = document.createElement('button');
@@ -399,7 +487,28 @@
 
     function updateGeometry() { const t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r')?document.getElementById('num-r').value:0.25); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b')?document.getElementById('num-b').value:0.4), h=parseFloat(document.getElementById('num-h')?document.getElementById('num-h').value:0.4); I=b*Math.pow(h,3)/12;} document.getElementById('val-Ic').innerText=I.toFixed(6); }
 
-    function getModelPayload() { const dofs=parseInt(document.getElementById('dof-select').value), E=parseFloat(document.getElementById('num-E').value), M=parseFloat(document.getElementById('num-M').value), t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r').value); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b').value), h=parseFloat(document.getElementById('num-h').value); I=b*Math.pow(h,3)/12;} const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v)); return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() }; }
+    // --- FIX: הגנה מפני קריאת נתונים לפני שהם קיימים ---
+    function getModelPayload() {
+        const dofs=parseInt(document.getElementById('dof-select').value);
+        const E=parseFloat(document.getElementById('num-E').value);
+        const M=parseFloat(document.getElementById('num-M').value);
+        const t=document.getElementById('profile-type').value;
+        let I=0;
+        // בדיקת קיום האלמנטים לפני קריאת הערך
+        if(t==='circle'){
+            const el = document.getElementById('num-r');
+            const r = el ? parseFloat(el.value) : 0.25;
+            I=Math.PI*Math.pow(r,4)/4;
+        } else {
+            const elB = document.getElementById('num-b');
+            const elH = document.getElementById('num-h');
+            const b = elB ? parseFloat(elB.value) : 0.4;
+            const h = elH ? parseFloat(elH.value) : 0.4;
+            I=b*Math.pow(h,3)/12;
+        }
+        const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v));
+        return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() };
+    }
 
     async function calculateSystem() {
         try {
