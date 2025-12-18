@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynami-Learn | Compact Dashboard</title>
+    <title>Dynami-Learn | Final Release</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; --success: #10b981; }
@@ -37,7 +37,7 @@
 
         h1 { margin: 0; color: var(--accent); font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
 
-        /* כפתור מסך מלא (הוספתי חזרה) */
+        /* כפתור מסך מלא */
         .fs-btn {
             background: transparent;
             border: 1px dashed #334155;
@@ -187,7 +187,12 @@
 
     <div class="section" style="margin-top:auto;">
         <div class="section-title">4. Simulation</div>
-        <div class="label-row"><label>Type:</label><select id="force-type" onchange="toggleDuration()" style="width:auto;"><option value="continuous">Continuous</option><option value="pulse" selected>Pulse (Earthquake)</option></select></div>
+        <div class="label-row"><label>Type:</label>
+            <select id="force-type" onchange="toggleDuration()" style="width:auto;">
+                <option value="continuous">Harmonic Load - nonstop</option>
+                <option value="pulse" selected>Harmonic Load - with stopping point</option>
+            </select>
+        </div>
         <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
         <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
         <div class="input-group"><input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)"><input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')"></div>
@@ -196,7 +201,7 @@
     <div class="credit-footer">Powered by <strong>Dekel winkler & Jeremy scalais</strong></div>
 </aside>
 <main>
-    <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
+    <div class="card"><div class="card-header">VISUALIZER (AUTO-SCALED)</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
     <div class="card">
         <div class="card-header">SYSTEM PROPERTIES</div>
         <div class="card-body matrix-container" id="results-area">System not calculated yet.</div>
@@ -205,7 +210,11 @@
     <div class="card" style="grid-column: span 2;">
         <div class="card-header" style="padding:0; padding-right:10px;">
             <div id="tabs-header" class="tabs-header"></div>
-            <div class="legend-row"><label class="legend-item" style="color:#38bdf8"><input type="checkbox" id="chk-x" checked onchange="updateGraphVisibility()"> Disp</label><label class="legend-item" style="color:#10b981"><input type="checkbox" id="chk-v" checked onchange="updateGraphVisibility()"> Vel</label><label class="legend-item" style="color:#f59e0b"><input type="checkbox" id="chk-a" checked onchange="updateGraphVisibility()"> Acc</label></div>
+            <div class="legend-row">
+                <label class="legend-item" style="color:#38bdf8"><input type="checkbox" id="chk-x" checked onchange="updateGraphVisibility()"> Disp [m]</label>
+                <label class="legend-item" style="color:#10b981"><input type="checkbox" id="chk-v" checked onchange="updateGraphVisibility()"> Vel [m/s]</label>
+                <label class="legend-item" style="color:#f59e0b"><input type="checkbox" id="chk-a" checked onchange="updateGraphVisibility()"> Acc [m/s²]</label>
+            </div>
         </div>
         <div id="tabs-body" class="card-body" style="padding:0; border-bottom: none;"></div>
         <div class="graph-scroll-container"><input type="range" id="time-slider" min="0" max="100" value="100" step="0.1" oninput="onTimeScroll()"></div>
@@ -419,14 +428,14 @@
             const newChart = new Chart(ctx, {
                 type: 'line',
                 data: { datasets: [
-                    { label: 'Disp (m)', data: [], borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-x').checked },
-                    { label: 'Vel (m/s)', data: [], borderColor: '#10b981', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-v').checked },
-                    { label: 'Acc (m/s²)', data: [], borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-a').checked }
+                    { label: 'Disp [m]', data: [], borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-x').checked },
+                    { label: 'Vel [m/s]', data: [], borderColor: '#10b981', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-v').checked },
+                    { label: 'Acc [m/s²]', data: [], borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-a').checked }
                 ]},
                 options: {
                     responsive: true, maintainAspectRatio: false, animation: false,
                     scales: {
-                        x: { type: 'linear', min: 0, max: 20, grid: {color:'#334155'}, title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'}, customPeriod: T },
+                        x: { type: 'linear', min: 0, max: 20, grid: {color:'#334155'}, title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'}, customPeriod: T, ticks: {stepSize: 1} },
                         y: { grid: {color:'#334155'}, ticks: { color:'#94a3b8', callback: (v) => Number(v).toExponential(1) } }
                     },
                     plugins: { legend: {display:false} }
@@ -487,28 +496,7 @@
 
     function updateGeometry() { const t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r')?document.getElementById('num-r').value:0.25); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b')?document.getElementById('num-b').value:0.4), h=parseFloat(document.getElementById('num-h')?document.getElementById('num-h').value:0.4); I=b*Math.pow(h,3)/12;} document.getElementById('val-Ic').innerText=I.toFixed(6); }
 
-    // --- FIX: הגנה מפני קריאת נתונים לפני שהם קיימים ---
-    function getModelPayload() {
-        const dofs=parseInt(document.getElementById('dof-select').value);
-        const E=parseFloat(document.getElementById('num-E').value);
-        const M=parseFloat(document.getElementById('num-M').value);
-        const t=document.getElementById('profile-type').value;
-        let I=0;
-        // בדיקת קיום האלמנטים לפני קריאת הערך
-        if(t==='circle'){
-            const el = document.getElementById('num-r');
-            const r = el ? parseFloat(el.value) : 0.25;
-            I=Math.PI*Math.pow(r,4)/4;
-        } else {
-            const elB = document.getElementById('num-b');
-            const elH = document.getElementById('num-h');
-            const b = elB ? parseFloat(elB.value) : 0.4;
-            const h = elH ? parseFloat(elH.value) : 0.4;
-            I=b*Math.pow(h,3)/12;
-        }
-        const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v));
-        return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() };
-    }
+    function getModelPayload() { const dofs=parseInt(document.getElementById('dof-select').value), E=parseFloat(document.getElementById('num-E').value), M=parseFloat(document.getElementById('num-M').value), t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r').value); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b').value), h=parseFloat(document.getElementById('num-h').value); I=b*Math.pow(h,3)/12;} const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v)); return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() }; }
 
     async function calculateSystem() {
         try {
