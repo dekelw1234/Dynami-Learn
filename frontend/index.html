@@ -3,12 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynami-Learn | Final Release</title>
+    <title>Dynami-Learn | Professional Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; --info: #f59e0b; --success: #10b981; }
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --danger: #ef4444;
+            --info: #f59e0b;
+            --success: #10b981;
+        }
 
-        /* --- הגדרות בסיס --- */
+        html { font-size: 14px; }
+
         body {
             background: var(--bg);
             color: var(--text);
@@ -18,176 +27,170 @@
             height: 100vh;
             overflow: hidden;
             direction: ltr;
-            font-size: 14px;
+            font-size: 1rem;
         }
 
         /* --- תפריט צד --- */
         aside {
-            width: 300px;
+            width: 320px;
             background: #0b1120;
             border-right: 1px solid #334155;
-            padding: 8px;
+            padding: 0.6rem;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 0.5rem;
             overflow-y: auto;
             flex-shrink: 0;
             z-index: 10;
-            position: relative; /* חשוב עבור ה-Tooltip */
+            position: relative;
             transition: 0.3s;
         }
 
-        /* --- סגנון לאלמנטים נעולים --- */
-        aside.locked {
-            cursor: not-allowed;
-        }
+        h1 { margin: 0; color: var(--accent); font-size: 1.2rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 0.2rem; text-transform: uppercase; }
 
-        aside.locked input,
-        aside.locked select,
-        aside.locked .calc-btn {
-            opacity: 0.3;
-            pointer-events: none;
-            filter: grayscale(1);
-        }
-
-        /* --- התיקון: הודעה עדינה ומקצועית --- */
-        aside.locked:hover::after {
-            content: "🔒 Simulation active. Press RESET to edit.";
-            position: absolute;
-            bottom: 40px; /* מופיע למטה ליד הכפתורים */
-            left: 50%;
-            transform: translateX(-50%);
-
-            /* עיצוב עדין יותר */
-            background: rgba(15, 23, 42, 0.95); /* כהה מאוד */
-            border: 1px solid var(--info); /* מסגרת כתומה */
-            color: var(--info);
-
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            white-space: nowrap;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            pointer-events: none;
-            z-index: 100;
-            animation: slideUp 0.2s ease-out;
-        }
-
-        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
-
-        h1 { margin: 0; color: var(--accent); font-size: 1.1rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; }
-
-        /* כפתור מסך מלא */
-        .fs-btn {
-            background: transparent;
-            border: 1px dashed #334155;
-            color: #94a3b8;
-            font-size: 0.7rem;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
+        /* --- שורת הכלים המאוחדת (פונט + מסך מלא) --- */
+        .tools-row {
+            display: flex;
+            justify-content: space-between; /* מרווח בין הקבוצות */
+            align-items: center;
             margin-bottom: 5px;
-            width: 100%;
-            transition: 0.2s;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #334155;
+            gap: 10px;
         }
-        .fs-btn:hover { color: #fff; border-color: #fff; }
 
-        /* --- סקציות --- */
-        .section {
-            background: rgba(255,255,255,0.03);
-            padding: 6px 8px;
+        .font-group {
+            display: flex;
+            gap: 2px;
+        }
+
+        .tool-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px 8px;
             border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tool-btn:hover { background: #334155; color: #fff; border-color: #64748b; }
+
+        /* כפתור מסך מלא - אייקון בלבד */
+        .fs-icon-btn {
+            padding: 4px 10px;
+            color: var(--accent);
+        }
+
+        /* --- מנגנון נעילה --- */
+        #inputs-area { display: flex; flex-direction: column; gap: 0.4rem; position: relative; flex: 1; }
+        #inputs-area.locked > .section { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+
+        #inputs-area.locked:hover::after {
+            content: "🔒 Simulation Active.\A Press RESET to edit.";
+            white-space: pre-wrap;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid var(--info); color: var(--info);
+            padding: 1rem; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            pointer-events: none; z-index: 100;
+            width: 80%;
+            animation: smoothPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes smoothPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* --- אזור כפתורי השליטה --- */
+        #controls-area {
+            margin-top: auto;
+            background: #1e293b;
+            padding: 0.6rem;
+            border-radius: 6px;
             border: 1px solid #334155;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .section-title {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            font-weight: bold;
-            text-transform: uppercase;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 2px;
-            margin-bottom: 2px;
-            display: flex;
-            justify-content: space-between;
+            gap: 0.4rem;
             align-items: center;
+            flex-shrink: 0;
         }
 
-        .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; line-height: 1.2; }
-        .input-group { display: flex; gap: 4px; align-items: center; }
+        .section { background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 4px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 0.4rem; }
+        .section-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #334155; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; line-height: 1.2; }
+        .input-group { display: flex; gap: 0.3rem; align-items: center; }
 
-        input[type="range"] { flex: 1; height: 3px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-        input[type="number"] { width: 45px; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 1px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.75rem; }
-        select { background:#0f172a; color:white; border:1px solid #334155; border-radius:3px; padding:1px; font-size:0.75rem; width: 100%; height: 22px; }
+        input[type="range"] { flex: 1; height: 4px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        input[type="number"] { width: 3.5em; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
+        select { background:#0f172a; color:white; border:1px solid #334155; border-radius:3px; padding: 3px; font-size:0.8rem; width: 100%; }
 
-        .btn-row { display: flex; gap: 5px; margin-top: 2px; }
-        button.action-btn { padding: 4px 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 0.7rem; background: #334155; color: #fff; border: 1px solid #475569; height: 24px; }
+        button.action-btn {
+            padding: 6px 12px;
+            border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+            text-transform: uppercase; font-size: 0.75rem;
+            background: #334155; color: #fff; border: 1px solid #475569;
+            min-height: 28px;
+        }
         button.action-btn:hover { background: #475569; }
-        button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        button.calc-btn { background: #0ea5e9; color: #fff; border: none; width: 100%; display: block; height: 28px; margin-top: 0; }
+        button.calc-btn { background: #0ea5e9; color: #fff; border: none; width: 100%; display: block; margin-top: 0; }
         button.calc-btn:hover { background: #0284c7; }
         button.start-btn { background: #10b981; border: none; flex: 1; }
         button.start-btn:hover { background: #059669; }
         button.start-btn.running { background: #ef4444; }
         button.start-btn.paused { background: #f59e0b; }
-        button.reset-btn { background: #475569; max-width: 50px; }
+        button.reset-btn { background: #475569; max-width: 60px; }
 
-        .credit-footer { margin-top: auto; padding-top: 5px; font-size: 0.65rem; color: #64748b; text-align: center; border-top: 1px solid #334155; }
+        .credit-footer { margin-top: 5px; padding-top: 5px; font-size: 0.7rem; color: #64748b; text-align: center; border-top: 1px solid #334155; line-height: 1.4; }
 
-        /* --- אזור ראשי --- */
-        main {
-            flex: 1;
-            padding: 8px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 50% 50%;
-            gap: 8px;
-            overflow: hidden;
-        }
-
+        main { flex: 1; padding: 0.6rem; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 50% 50%; gap: 0.6rem; overflow: hidden; }
         .card { background: var(--panel); border: 1px solid #334155; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .card-header { background: rgba(0,0,0,0.2); padding: 0 8px; font-size: 0.75rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; height: 28px; flex-shrink: 0; }
+        .card-header { background: rgba(0,0,0,0.2); padding: 0 0.6rem; font-size: 0.8rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; min-height: 32px; flex-shrink: 0; }
         .card-body { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .card-footer { padding: 5px; border-top: 1px solid #334155; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+        .card-footer { padding: 0.4rem; border-top: 1px solid #334155; background: rgba(0,0,0,0.1); flex-shrink: 0; }
 
-        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.8rem; padding: 8px; color: #cbd5e1; line-height: 1.4; overflow: auto; flex: 1; }
-        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-        .modes-table th { text-align: left; color: #64748b; font-size: 0.75rem; border-bottom: 1px solid #334155; padding: 2px 4px; }
-        .modes-table td { padding: 2px 4px; border-bottom: 1px solid #1e293b; font-size: 0.8rem; }
-        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 8px; display: block; font-size: 0.75rem; }
-        .mat-row { display: flex; gap: 8px; font-size: 0.8rem; color: var(--accent); white-space: nowrap; }
+        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.9rem; padding: 0.6rem; color: #cbd5e1; line-height: 1.5; overflow: auto; flex: 1; }
+        .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
+        .modes-table th { text-align: left; color: #64748b; font-size: 0.8rem; border-bottom: 1px solid #334155; padding: 4px; }
+        .modes-table td { padding: 4px; border-bottom: 1px solid #1e293b; font-size: 0.85rem; }
+        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 0.5rem; display: block; font-size: 0.8rem; }
+        .mat-row { display: flex; gap: 0.5rem; font-size: 0.9rem; color: var(--accent); white-space: nowrap; }
 
         .tabs-header { display: flex; flex: 1; overflow-x: auto; height: 100%; }
-        .tab-btn { padding: 0 10px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.7rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
+        .tab-btn { padding: 0 12px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
         .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .tab-btn.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-bottom: 2px solid var(--accent); }
         .tab-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; pointer-events: none; }
         .tab-content.active { visibility: visible; pointer-events: auto; }
         .chart-container { position: relative; width: 100%; height: 100%; }
         #vizCanvas { width: 100% !important; height: 100% !important; display: block; }
-        .legend-row { display: flex; gap: 8px; font-size: 0.7rem; align-items: center; }
-        .graph-scroll-container { height: 18px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
+        .legend-row { display: flex; gap: 0.6rem; font-size: 0.75rem; align-items: center; }
+        .graph-scroll-container { height: 20px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
         #time-slider { width: 100%; cursor: pointer; height: 4px; }
 
-        /* מידע וטולטיפ נגרר */
-        .info-btn { background: transparent; color: var(--info); border: 1px solid var(--info); border-radius: 50%; width: 12px; height: 12px; font-size: 9px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 3px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
+        .info-btn { background: transparent; color: var(--info); border: 1px solid var(--info); border-radius: 50%; width: 14px; height: 14px; font-size: 10px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 3px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
         .info-btn:hover { background: var(--info); color: #000; opacity: 1; }
 
-        .info-tooltip { position: absolute; background: rgba(15, 23, 42, 0.98); border: 1px solid var(--accent); border-left: 3px solid var(--info); color: var(--text); padding: 0; border-radius: 4px; font-size: 0.8rem; z-index: 20000; width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.95); animation: popIn 0.2s ease-out; display: flex; flex-direction: column; }
-        .tooltip-header { background: rgba(255,255,255,0.05); padding: 6px 8px; cursor: move; font-weight: bold; font-size: 0.85rem; color: var(--info); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; user-select: none; }
-        .tooltip-content { padding: 8px; line-height: 1.4; white-space: pre-wrap; }
+        .info-tooltip { position: absolute; background: rgba(15, 23, 42, 0.98); border: 1px solid var(--accent); border-left: 3px solid var(--info); color: var(--text); padding: 0; border-radius: 4px; font-size: 0.85rem; z-index: 20000; width: 260px; box-shadow: 0 10px 30px rgba(0,0,0,0.95); animation: popIn 0.2s ease-out; display: flex; flex-direction: column; }
+        .tooltip-header { background: rgba(255,255,255,0.05); padding: 0.5rem; cursor: move; font-weight: bold; font-size: 0.9rem; color: var(--info); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .tooltip-content { padding: 0.6rem; line-height: 1.5; white-space: pre-wrap; }
         .tooltip-close { background: transparent; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; padding: 0 4px;}
         .tooltip-close:hover { transform: scale(1.1); }
         @keyframes popIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
 
         body.sim-running { cursor: not-allowed; }
-        body.sim-running aside { pointer-events: none; opacity: 0.7; }
-        body.sim-running #btn-sim, body.sim-running #btn-reset { pointer-events: auto !important; cursor: pointer !important; opacity: 1 !important; }
+        body.sim-running aside { pointer-events: none; opacity: 0.9; }
+        body.sim-running #controls-area { pointer-events: auto !important; opacity: 1 !important; cursor: default; }
+        body.sim-running .tools-row { pointer-events: auto !important; opacity: 1 !important; cursor: default; }
         body.sim-running main { cursor: default; pointer-events: auto !important; }
 
         @media (max-width: 900px) {
@@ -203,43 +206,69 @@
 
 <aside id="sidebar">
     <h1>Dynami-Learn</h1>
-    <button class="fs-btn" onclick="toggleFullScreen()">⛶ Full Screen</button>
 
-    <div class="section">
-        <div class="section-title">1. Structure <button class="info-btn" onclick="showTooltip('stories', event)">i</button></div>
-        <div class="label-row"><label>Stories:</label><select id="dof-select" onchange="onDofChange()"><option value="1">1 Story (SDOF)</option><option value="2" selected>2 Stories (2DOF)</option><option value="3">3 Stories (3DOF)</option></select></div>
-    </div>
-    <div class="section">
-        <div class="section-title">2. Properties</div>
-        <div class="label-row"><label>Young's Modulus (E) [GPa]: <button class="info-btn" onclick="showTooltip('E', event)">i</button></label></div>
-        <div class="input-group"><input type="range" id="slide-E" min="10" max="50" value="30" oninput="syncInputs('E', true)"><input type="number" id="num-E" value="30" min="1" max="50" oninput="syncInputs('E', false)" onchange="validateInput('E')"></div>
-
-        <div class="label-row"><label>Floor Load (q) [kN/m²]: <button class="info-btn" onclick="showTooltip('mass', event)">i</button></label></div>
-        <div class="input-group"><input type="range" id="slide-M" min="10" max="100" value="50" oninput="syncInputs('M', true)"><input type="number" id="num-M" value="50" min="1" max="100" oninput="syncInputs('M', false)" onchange="validateInput('M')"></div>
-
-        <div class="label-row" style="border-top:1px dashed #334155; padding-top:4px; margin-top:2px;"><label>Profile:</label><select id="profile-type" onchange="updateProfileType()" style="width: auto;"><option value="circle">Circular</option><option value="rect">Rectangular</option></select></div>
-        <div id="geo-inputs"></div>
-        <div style="font-size:0.7rem; color:#64748b; margin-top: -2px;">Ic: <span id="val-Ic">...</span> m⁴</div>
-    </div>
-    <div class="section">
-        <div class="section-title">3. Damping (Zeta 0-1) <button class="info-btn" onclick="showTooltip('damping', event)">i</button></div>
-        <div id="damping-container" style="display:flex; flex-direction:column; gap:4px;"></div>
-    </div>
-
-    <div class="section" style="margin-top:auto;">
-        <div class="section-title">4. Simulation</div>
-        <div class="label-row"><label>Type:</label>
-            <select id="force-type" onchange="toggleDuration()" style="width:auto;">
-                <option value="continuous">Harmonic Load - nonstop</option>
-                <option value="pulse" selected>Harmonic Load - with stopping point</option>
-            </select>
+    <div class="tools-row">
+        <div class="font-group">
+            <button class="tool-btn" onclick="changeFontSize(-1)">A-</button>
+            <button class="tool-btn" onclick="resetFontSize()">Reset Font</button>
+            <button class="tool-btn" onclick="changeFontSize(1)">A+</button>
         </div>
-        <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
-        <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
-        <div class="input-group"><input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)"><input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')"></div>
-        <div class="btn-row"><button id="btn-sim" class="action-btn start-btn" onclick="toggleSimulation()">Start</button><button id="btn-reset" class="action-btn reset-btn" onclick="resetSimulation()">Reset</button></div>
+        <button class="tool-btn fs-icon-btn" onclick="toggleFullScreen()" title="Full Screen">⛶</button>
     </div>
-    <div class="credit-footer">Powered by <strong>Dekel winkler & Jeremy scalais</strong></div>
+
+    <div id="inputs-area">
+        <div class="section">
+            <div class="section-title">1. Structure <button class="info-btn" onclick="showTooltip('stories', event)">i</button></div>
+            <div class="label-row"><label>Stories:</label><select id="dof-select" onchange="onDofChange()"><option value="1">1 Story (SDOF)</option><option value="2" selected>2 Stories (2DOF)</option><option value="3">3 Stories (3DOF)</option></select></div>
+        </div>
+        <div class="section">
+            <div class="section-title">2. Properties</div>
+            <div class="label-row"><label>Young's Modulus (E) [GPa]: <button class="info-btn" onclick="showTooltip('E', event)">i</button></label></div>
+            <div class="input-group"><input type="range" id="slide-E" min="10" max="50" value="30" oninput="syncInputs('E', true)"><input type="number" id="num-E" value="30" min="1" max="50" oninput="syncInputs('E', false)" onchange="validateInput('E')"></div>
+
+            <div class="label-row"><label>Floor Load (q) [kN/m²]: <button class="info-btn" onclick="showTooltip('mass', event)">i</button></label></div>
+            <div class="input-group"><input type="range" id="slide-M" min="10" max="100" value="50" oninput="syncInputs('M', true)"><input type="number" id="num-M" value="50" min="1" max="100" oninput="syncInputs('M', false)" onchange="validateInput('M')"></div>
+
+            <div class="label-row" style="border-top:1px dashed #334155; padding-top:4px; margin-top:2px;"><label>Profile:</label><select id="profile-type" onchange="updateProfileType()" style="width: auto;"><option value="circle">Circular</option><option value="rect">Rectangular</option></select></div>
+            <div id="geo-inputs"></div>
+            <div style="font-size:0.7rem; color:#64748b; margin-top: -2px;">Ic: <span id="val-Ic">...</span> m⁴</div>
+        </div>
+        <div class="section">
+            <div class="section-title">3. Damping (Zeta 0-1) <button class="info-btn" onclick="showTooltip('damping', event)">i</button></div>
+            <div id="damping-container" style="display:flex; flex-direction:column; gap:4px;"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">4. Simulation Setup</div>
+            <div class="label-row"><label>Type:</label>
+                <select id="force-type" onchange="toggleDuration()" style="width:auto;">
+                    <option value="continuous">Harmonic Load - nonstop</option>
+                    <option value="pulse" selected>Harmonic Load - with stopping point</option>
+                </select>
+            </div>
+            <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
+            <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
+            <div class="input-group"><input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)"><input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')"></div>
+        </div>
+    </div>
+
+    <div id="controls-area">
+        <select id="sim-speed" style="width:65px; height:28px; font-weight:bold; color:var(--info); background:#0f172a; border:1px solid #475569; border-radius:4px; padding:0 4px; margin-right:auto;">
+            <option value="0.25">0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+        </select>
+        <button id="btn-sim" class="action-btn start-btn" onclick="toggleSimulation()">Start</button>
+        <button id="btn-reset" class="action-btn reset-btn" onclick="resetSimulation()">Reset</button>
+    </div>
+
+    <div class="credit-footer">
+        Powered by Dekel Winkler & Jeremy Scalais<br>
+        <span style="opacity:0.8">Led by Dr. Assaf Shmerling</span>
+    </div>
 </aside>
 <main>
     <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
@@ -263,7 +292,6 @@
 </main>
 
 <script>
-    // --- חיבור חכם ---
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const BASE_URL = isLocal ? "127.0.0.1:8000" : "dynami-learn.onrender.com";
     const PROTOCOL = isLocal ? "http" : "https";
@@ -271,6 +299,19 @@
     const API_URL = `${PROTOCOL}://${BASE_URL}`;
     const WS_URL = `${WS_PROTOCOL}://${BASE_URL}/ws/simulate`;
     console.log(`Running in ${isLocal ? "LOCAL" : "CLOUD"} mode. Connected to: ${API_URL}`);
+
+    // --- Font Size Control ---
+    let currentFontSize = 14;
+    function changeFontSize(delta) {
+        currentFontSize += delta;
+        if (currentFontSize < 12) currentFontSize = 12;
+        if (currentFontSize > 18) currentFontSize = 18;
+        document.documentElement.style.fontSize = currentFontSize + 'px';
+    }
+    function resetFontSize() {
+        currentFontSize = 14;
+        document.documentElement.style.fontSize = '14px';
+    }
 
     function toggleFullScreen() {
         if (!document.fullscreenElement) {
@@ -333,14 +374,9 @@
         setTimeout(calculateSystem, 500);
     };
 
-    // --- בקרת נעילה (Locking Mechanism) ---
     function setControlsState(shouldLock) {
-        const sidebar = document.getElementById('sidebar');
-        if (shouldLock) {
-            sidebar.classList.add('locked');
-        } else {
-            sidebar.classList.remove('locked');
-        }
+        const inputArea = document.getElementById('inputs-area');
+        if (shouldLock) inputArea.classList.add('locked'); else inputArea.classList.remove('locked');
     }
 
     function toggleSimulation() {
@@ -351,10 +387,9 @@
             isRunning = false; isPaused = true;
             btn.innerText = "Resume"; btn.className = "action-btn start-btn paused";
             document.body.classList.remove("sim-running");
-            // הערה: אנחנו לא משחררים את הנעילה כאן!
         } else {
             // מתחילים (Start / Resume)
-            setControlsState(true); // נועלים הכל
+            setControlsState(true);
             startWebSocket();
         }
     }
@@ -379,18 +414,17 @@
 
     async function startWebSocket() {
         if (ws) ws.close();
-
-        // שלב קריטי: עדכון המטריצות על המסך והכנת הנתונים החדשים
         await calculateSystem();
-
         const startT = isPaused ? lastState.t : 0;
         const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
 
-        // כאן אנחנו שולחים את הפרמטרים *הנוכחיים* (מהסליידרים)
+        const speedFactor = parseFloat(document.getElementById("sim-speed").value);
+
         const payload = {
             model_req: getModelPayload(),
             sim_req: {
-                t0: startT, dt: 0.02,
+                t0: startT,
+                dt: 0.02 * speedFactor,
                 force_function: {
                     type: document.getElementById("force-type").value,
                     amp: 1000,
@@ -574,8 +608,14 @@
             }
             let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq(Hz)</th><th>ω (rad/s)</th><th>T(s)</th></tr>`;
             data.frequencies.forEach((w,i)=> { h+=`<tr><td>${i+1}</td><td>${(w/6.28).toFixed(2)}</td><td style="color:#f59e0b; font-weight:bold;">${w.toFixed(2)}</td><td style="color:#38bdf8">${(6.28/w).toFixed(3)}</td></tr>`; });
-            h+=`</table><span class="mat-label">Mass [M] (kg):</span>`; data.M_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>n.toFixed(0)).join(", ")} ]</div>`);
-            h+=`<span class="mat-label">Stiffness [K] (N/m):</span>`; data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>n.toExponential(1)).join(", ")} ]</div>`);
+
+            // --- תיקון יחידות: חילוק ב-1000 להצגת kN·s²/m ו-kN/m ---
+            h+=`<span class="mat-label">Mass [M] (kN·s²/m):</span>`;
+            data.M_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toFixed(2)).join(", ")} ]</div>`);
+
+            h+=`<span class="mat-label">Stiffness [K] (kN/m):</span>`;
+            data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toLocaleString('en-US', {maximumFractionDigits:0})).join(", ")} ]</div>`);
+
             document.getElementById("results-area").innerHTML = h;
         } catch(e){ console.error(e); document.getElementById("results-area").innerText = "Error calculating system properties. Is server running?"; }
     }
