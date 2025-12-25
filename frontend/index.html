@@ -48,10 +48,10 @@
 
         h1 { margin: 0; color: var(--accent); font-size: 1.2rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 0.2rem; text-transform: uppercase; }
 
-        /* --- שורת הכלים המאוחדת (פונט + מסך מלא) --- */
+        /* --- שורת הכלים --- */
         .tools-row {
             display: flex;
-            justify-content: space-between; /* מרווח בין הקבוצות */
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 5px;
             padding-bottom: 5px;
@@ -80,7 +80,6 @@
         }
         .tool-btn:hover { background: #334155; color: #fff; border-color: #64748b; }
 
-        /* כפתור מסך מלא - אייקון בלבד */
         .fs-icon-btn {
             padding: 4px 10px;
             color: var(--accent);
@@ -130,8 +129,11 @@
 
         input[type="range"] { flex: 1; height: 4px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-        input[type="number"] { width: 3.5em; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
+        input[type="number"] { width: 4.5em; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
         select { background:#0f172a; color:white; border:1px solid #334155; border-radius:3px; padding: 3px; font-size:0.8rem; width: 100%; }
+
+        /* סטייל למצב Disabled של הסלקט */
+        select:disabled { opacity: 0.5; cursor: not-allowed; }
 
         button.action-btn {
             padding: 6px 12px;
@@ -247,8 +249,15 @@
                 </select>
             </div>
             <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="10" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
+
             <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
-            <div class="input-group"><input type="range" id="slide-F" min="0.1" max="10" step="0.1" value="2" oninput="syncInputs('F', true)"><input type="number" id="num-F" value="2" min="0.1" max="20" oninput="syncInputs('F', false)" onchange="validateInput('F')"></div>
+
+            <div id="mode-presets" style="display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap; min-height:20px;"></div>
+
+            <div class="input-group">
+            <input type="range" id="slide-F" min="0.1" max="10" step="0.01" value="2" oninput="syncInputs('F', true)">
+                <input type="number" id="num-F" value="2" min="0.1" max="20" step="0.0001" oninput="syncInputs('F', false)" onchange="validateInput('F')">
+            </div>
         </div>
     </div>
 
@@ -325,6 +334,7 @@
     let systemPeriods = [], activeCharts = [], maxAbsDisp = 0.00001;
     let maxTimeRecorded = 0, isAutoScroll = true;
     let lastState = { t:0, all_x:null, all_v:null };
+    let exactFreqFromSet = null;
 
     const tooltipsData = {
         "stories": { title: "Stories (DOF)", text: "• SDOF (1): Single equation.\n• MDOF (2-3): Multiple coupled equations." },
@@ -362,16 +372,49 @@
     function closeAllTooltips() { document.querySelectorAll('.info-tooltip').forEach(el => el.remove()); }
     document.addEventListener('click', (e) => { if (!e.target.closest('.info-tooltip') && !e.target.classList.contains('info-btn')) closeAllTooltips(); });
 
-    const quakePlugin = { id: 'quakeLine', afterDraw: (chart) => { /* simplified */ } };
+    // --- תיקון: פלאגין לציור קו ירוק בסיום הרעידה ---
+    const quakePlugin = {
+        id: 'quakeLine',
+        afterDraw: (chart) => {
+            const type = document.getElementById('force-type').value;
+            if (type !== 'pulse') return;
+            const dur = parseFloat(document.getElementById('num-dur').value);
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const yAxis = chart.scales.y;
+            // ה-Custom Period נשמר ב-chart options
+            const T = chart.options.scales.x.customPeriod;
+            if (!T) return;
+
+            const xVal = dur / T;
+            if (xVal < xAxis.min || xVal > xAxis.max) return;
+
+            const xPixel = xAxis.getPixelForValue(xVal);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#10b981'; // צבע ירוק (כמו Vel)
+            ctx.setLineDash([5, 5]); // קו מקווקו
+            ctx.moveTo(xPixel, yAxis.top);
+            ctx.lineTo(xPixel, yAxis.bottom);
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
     Chart.register(quakePlugin);
 
     window.onload = function() {
         console.log("Initializing...");
-        const dofSelect = document.getElementById('dof-select');
-        if (dofSelect) { dofSelect.value = "2"; onDofChange(); }
-        syncInputs('E', true); syncInputs('M', true); syncInputs('F', true); syncInputs('dur', true);
         updateProfileType();
-        setTimeout(calculateSystem, 500);
+        syncInputs('E', true); syncInputs('M', true); syncInputs('F', true); syncInputs('dur', true);
+        const dofSelect = document.getElementById('dof-select');
+        if (dofSelect) {
+            dofSelect.value = "2";
+            onDofChange();
+        } else {
+            setTimeout(calculateSystem, 500);
+        }
     };
 
     function setControlsState(shouldLock) {
@@ -381,15 +424,18 @@
 
     function toggleSimulation() {
         const btn = document.getElementById("btn-sim");
+        const speedSel = document.getElementById("sim-speed");
         if (isRunning) {
-            // עוצרים (Pause)
             if (ws) ws.close();
             isRunning = false; isPaused = true;
             btn.innerText = "Resume"; btn.className = "action-btn start-btn paused";
             document.body.classList.remove("sim-running");
+            // שחרור מהירות כשהסימולציה עוצרת
+            speedSel.disabled = false;
         } else {
-            // מתחילים (Start / Resume)
             setControlsState(true);
+            // נעילת מהירות כשהסימולציה רצה
+            speedSel.disabled = true;
             startWebSocket();
         }
     }
@@ -397,13 +443,12 @@
     function resetSimulation() {
         if (ws) ws.close();
         isRunning = false; isPaused = false;
-
-        // משחררים את הנעילה
         setControlsState(false);
-
         const btn = document.getElementById("btn-sim");
+        const speedSel = document.getElementById("sim-speed");
         btn.innerText = "Start"; btn.className = "action-btn start-btn";
         document.body.classList.remove("sim-running");
+        speedSel.disabled = false; // שחרור מהירות
         lastState = { t: 0, all_x: null, all_v: null };
         maxTimeRecorded = 0; isAutoScroll = true;
         document.getElementById('time-slider').value = 0; maxAbsDisp = 0.00001;
@@ -414,30 +459,55 @@
 
     async function startWebSocket() {
         if (ws) ws.close();
-        await calculateSystem();
+        if (systemPeriods.length === 0) await calculateSystem();
+
         const startT = isPaused ? lastState.t : 0;
         const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
-
         const speedFactor = parseFloat(document.getElementById("sim-speed").value);
+
+        let freqToSend;
+        let isResonanceMode = false;
+
+        if (exactFreqFromSet !== null) {
+            freqToSend = exactFreqFromSet;
+            isResonanceMode = true;
+            console.log("Using RAW SERVER OMEGA (High Precision Mode)");
+        } else {
+            freqToSend = parseFloat(document.getElementById("num-F").value) * 2 * Math.PI;
+            console.log("Using MANUAL frequency");
+        }
+
+        let minPeriod = systemPeriods.length > 0 ? Math.min(...systemPeriods) : 0.2;
+        let safeDt;
+
+        if (isResonanceMode) {
+            safeDt = Math.max(0.002, minPeriod / 50);
+            console.log(`🚀 HIGH PRECISION DT: ${safeDt.toFixed(6)}s (Period/50)`);
+        } else {
+            safeDt = Math.min(0.02, Math.max(0.005, minPeriod / 30));
+            console.log(`ℹ️ Standard DT: ${safeDt.toFixed(6)}s`);
+        }
 
         const payload = {
             model_req: getModelPayload(),
             sim_req: {
                 t0: startT,
-                dt: 0.02 * speedFactor,
+                dt: safeDt,
                 force_function: {
                     type: document.getElementById("force-type").value,
                     amp: 1000,
-                    freq: parseFloat(document.getElementById("num-F").value) * 2 * Math.PI,
+                    freq: freqToSend,
                     duration: parseFloat(document.getElementById("num-dur").value)
                 },
                 damping_ratios: getDampingValues(),
                 initial_conditions: initialConds
             }
         };
+
         ws = new WebSocket(WS_URL);
         const btn = document.getElementById("btn-sim");
         btn.innerText = "Connecting...";
+
         ws.onopen = () => {
             ws.send(JSON.stringify(payload));
             isRunning = true; isAutoScroll = true;
@@ -453,6 +523,7 @@
                 const slider = document.getElementById('time-slider');
                 slider.max = rawTime;
                 if(isAutoScroll) slider.value = rawTime;
+
                 activeCharts.forEach(obj => {
                     const chart = obj.chart; const T = obj.period; const normT = rawTime / T;
                     chart.data.datasets[0].data.push({x: normT, y: msg.x});
@@ -471,9 +542,19 @@
         ws.onclose = () => { if(isRunning) toggleSimulation(); };
     }
 
+    // --- תיקון: גלילה חכמה. אם גוררים לסוף, הגלילה האוטומטית חוזרת ---
     function onTimeScroll() {
-        isAutoScroll = false;
-        const val = parseFloat(document.getElementById('time-slider').value);
+        const slider = document.getElementById('time-slider');
+        const val = parseFloat(slider.value);
+        const max = parseFloat(slider.max);
+
+        // אם המשתמש גרר את הסליידר עד הסוף (או קרוב מאוד לסוף), מחזירים את הגלילה האוטומטית
+        if (val >= max - 0.5) {
+            isAutoScroll = true;
+        } else {
+            isAutoScroll = false;
+        }
+
         activeCharts.forEach(obj => {
             const chart = obj.chart; const T = obj.period; const normVal = val / T; const win = 20;
             if (normVal > win) { chart.options.scales.x.min = normVal - win; chart.options.scales.x.max = normVal; }
@@ -517,11 +598,7 @@
                             type: 'linear', min: 0, max: 20, grid: {color:'#334155'},
                             title: {display:true, text:`Normalized Time (t / T${modeNum})`, color:'#94a3b8'},
                             customPeriod: T,
-                            ticks: {
-                                color: '#94a3b8',
-                                stepSize: 1,
-                                callback: function(value) { return Math.round(value); }
-                            }
+                            ticks: { color: '#94a3b8', stepSize: 1, callback: function(value) { return Math.round(value); } }
                         },
                         y: { grid: {color:'#334155'}, ticks: { color:'#94a3b8', callback: (v) => Number(v).toExponential(1) } }
                     },
@@ -554,14 +631,27 @@
         const s=document.getElementById('slide-'+id), n=document.getElementById('num-'+id);
         if(fS) n.value=s.value; else s.value=n.value;
         if(['r','b','h'].includes(id)) updateGeometry();
-        if(id==='F') document.getElementById('val-w').innerText=`(ω=${(parseFloat(n.value)*6.28).toFixed(1)})`;
+        if(id==='F') document.getElementById('val-w').innerText=`(ω=${(parseFloat(n.value)*2*Math.PI).toFixed(4)})`;
+    }
+
+    window.setFreqFromMode = function(freqHz, rawOmega) {
+        const numInput = document.getElementById('num-F');
+        const rangeInput = document.getElementById('slide-F');
+        exactFreqFromSet = rawOmega;
+        numInput.value = freqHz.toFixed(4);
+        rangeInput.value = freqHz;
+        syncInputs('F', false);
     }
 
     function validateInput(id) {
+        if (id === 'F') {
+            exactFreqFromSet = null;
+            console.log("Manual input detected. Exact frequency cleared.");
+        }
         const n=document.getElementById('num-'+id), s=document.getElementById('slide-'+id);
         let v=parseFloat(n.value); if(isNaN(v)) v=parseFloat(n.min); n.value=v; s.value=v;
         if(['r','b','h'].includes(id)) updateGeometry();
-        calculateSystem();
+        if(id !== 'F' && id !== 'dur') calculateSystem();
     }
 
     function onDofChange() {
@@ -581,9 +671,9 @@
 
     function updateProfileType() { const t=document.getElementById('profile-type').value, b=document.getElementById('geo-inputs'); if(t==='circle') b.innerHTML=`<div class="label-row"><label>Radius (r) [m]:</label></div><div class="input-group"><input type="range" id="slide-r" min="0.1" max="0.6" step="0.01" value="0.25" oninput="syncInputs('r',true)"><input type="number" id="num-r" value="0.25" min="0.01" max="0.6" step="0.01" oninput="syncInputs('r',false)" onchange="validateInput('r')"></div>`; else b.innerHTML=`<div class="label-row"><label>Width (b) [m]:</label></div><div class="input-group"><input type="range" id="slide-b" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('b',true)"><input type="number" id="num-b" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('b',false)" onchange="validateInput('b')"></div><div class="label-row"><label>Height (h) [m]:</label></div><div class="input-group"><input type="range" id="slide-h" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('h',true)"><input type="number" id="num-h" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('h',false)" onchange="validateInput('h')"></div>`; updateGeometry(); calculateSystem(); }
 
-    function updateGeometry() { const t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r')?document.getElementById('num-r').value:0.25); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b')?document.getElementById('num-b').value:0.4), h=parseFloat(document.getElementById('num-h')?document.getElementById('num-h').value:0.4); I=b*Math.pow(h,3)/12;} document.getElementById('val-Ic').innerText=I.toFixed(6); }
+    function updateGeometry() { const t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const el=document.getElementById('num-r'); const r=el?parseFloat(el.value):0.25; I=Math.PI*Math.pow(r,4)/4;} else {const elB=document.getElementById('num-b'), elH=document.getElementById('num-h'); const b=elB?parseFloat(elB.value):0.4, h=elH?parseFloat(elH.value):0.4; I=b*Math.pow(h,3)/12;} document.getElementById('val-Ic').innerText=I.toFixed(6); }
 
-    function getModelPayload() { const dofs=parseInt(document.getElementById('dof-select').value), E=parseFloat(document.getElementById('num-E').value), M=parseFloat(document.getElementById('num-M').value), t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const r=parseFloat(document.getElementById('num-r').value); I=Math.PI*Math.pow(r,4)/4;} else {const b=parseFloat(document.getElementById('num-b').value), h=parseFloat(document.getElementById('num-h').value); I=b*Math.pow(h,3)/12;} const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v)); return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() }; }
+    function getModelPayload() { const dofs=parseInt(document.getElementById('dof-select').value), E=parseFloat(document.getElementById('num-E').value), M=parseFloat(document.getElementById('num-M').value), t=document.getElementById('profile-type').value; let I=0; if(t==='circle'){const el=document.getElementById('num-r'); I=el?Math.PI*Math.pow(parseFloat(el.value),4)/4:0.003;} else {const elB=document.getElementById('num-b'), elH=document.getElementById('num-h'); const b=elB?parseFloat(elB.value):0.4, h=elH?parseFloat(elH.value):0.4; I=b*Math.pow(h,3)/12;} const arr=(v)=>Array(dofs).fill().map(()=>Array(2).fill(v)); return { "Hc":arr(3.0), "Ec":arr(E), "Ic":arr(I), "Lb":arr(6.0), "depth":6.0, "floor_load":M, "base_condition":1, "damping_ratios":getDampingValues() }; }
 
     async function calculateSystem() {
         try {
@@ -606,22 +696,43 @@
                     obj.chart.update('none');
                 });
             }
-            let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq(Hz)</th><th>ω (rad/s)</th><th>T(s)</th></tr>`;
-            data.frequencies.forEach((w,i)=> { h+=`<tr><td>${i+1}</td><td>${(w/6.28).toFixed(2)}</td><td style="color:#f59e0b; font-weight:bold;">${w.toFixed(2)}</td><td style="color:#38bdf8">${(6.28/w).toFixed(3)}</td></tr>`; });
 
-            // --- תיקון יחידות: חילוק ב-1000 להצגת kN·s²/m ו-kN/m ---
-            h+=`<span class="mat-label">Mass [M] (kN·s²/m):</span>`;
+            const presetsDiv = document.getElementById('mode-presets');
+            if(presetsDiv) {
+                presetsDiv.innerHTML = '';
+                data.frequencies.forEach((w, i) => {
+                    const freqHz = w / (2 * Math.PI);
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    btn.style.cssText = "font-size:0.65rem; padding:1px 4px; flex:1; background:#0f172a; border-color:#38bdf8; color:#38bdf8; min-height:20px;";
+                    btn.innerText = `Set M${i+1} (${freqHz.toFixed(2)})`;
+                    btn.title = `Set Frequency to Mode ${i+1} (${freqHz.toFixed(4)} Hz)`;
+                    btn.onclick = () => setFreqFromMode(freqHz, w);
+                    presetsDiv.appendChild(btn);
+                });
+            }
+
+            let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq</th><th>T</th></tr>`;
+            data.frequencies.forEach((w,i)=> {
+                const freqHz = w / (2 * Math.PI);
+                h+=`<tr>
+                        <td>${i+1}</td>
+                        <td>${freqHz.toFixed(3)} Hz</td>
+                        <td style="color:#38bdf8">${(2*Math.PI/w).toFixed(3)}s</td>
+                    </tr>`;
+            });
+            h+=`</table><span class="mat-label">Mass [M] (kN·s²/m):</span>`;
             data.M_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toFixed(2)).join(", ")} ]</div>`);
-
             h+=`<span class="mat-label">Stiffness [K] (kN/m):</span>`;
             data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toLocaleString('en-US', {maximumFractionDigits:0})).join(", ")} ]</div>`);
-
             document.getElementById("results-area").innerHTML = h;
         } catch(e){ console.error(e); document.getElementById("results-area").innerText = "Error calculating system properties. Is server running?"; }
     }
 
     function drawFrame(disps) {
-        const c=document.getElementById("vizCanvas"), ctx=c.getContext("2d"), r=c.parentElement.getBoundingClientRect();
+        const c=document.getElementById("vizCanvas");
+        if(!c) return;
+        const ctx=c.getContext("2d"), r=c.parentElement.getBoundingClientRect();
         c.width=r.width; c.height=r.height;
         const w=c.width, h=c.height, f=disps.length;
         const dMax = Math.max(maxAbsDisp, 0.001);

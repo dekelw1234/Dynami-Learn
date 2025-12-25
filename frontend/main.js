@@ -257,8 +257,8 @@ function syncInputs(id, fS) {
     const s = document.getElementById('slide-' + id), n = document.getElementById('num-' + id);
     if (fS) n.value = s.value; else s.value = n.value;
     if (['r', 'b', 'h'].includes(id)) updateGeometry();
-    if (id === 'F') document.getElementById('val-w').innerText = `(ω=${(parseFloat(n.value) * 6.28).toFixed(1)})`;
-}
+    if(id==='F') document.getElementById('val-w').innerText=`(ω=${(parseFloat(n.value)*6.28318).toFixed(3)})`;
+    }
 
 function validateInput(id) {
     const n = document.getElementById('num-' + id), s = document.getElementById('slide-' + id);
@@ -360,29 +360,62 @@ function getModelPayload() {
 
 // --- SERVER COMM ---
 async function calculateSystem() {
-    try {
-        const res = await fetch(`${API_URL}/shear-building/modal`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(getModelPayload())
-        });
-        const data = await res.json();
+        try {
+            console.log("Fetching matrices...");
+            const res = await fetch(`${API_URL}/shear-building/modal`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(getModelPayload()) });
+            if(!res.ok) throw new Error("Server error");
+            const data = await res.json();
+            const newPeriods = data.frequencies.map(w => 2*Math.PI/w);
+            if(newPeriods.length !== systemPeriods.length) {
+                systemPeriods = newPeriods;
+                initTabsAndCharts(systemPeriods);
+            } else {
+                systemPeriods = newPeriods;
+                const btns = document.querySelectorAll('.tab-btn');
+                btns.forEach((b, i) => { if(systemPeriods[i]) b.innerText = `Mode ${i+1} (T=${systemPeriods[i].toFixed(3)}s)`; });
+                activeCharts.forEach((obj, i) => {
+                    obj.period = systemPeriods[i];
+                    obj.chart.options.scales.x.title.text = `Normalized Time (t / T${i+1})`;
+                    obj.chart.options.scales.x.customPeriod = systemPeriods[i];
+                    obj.chart.update('none');
+                });
+            }
 
-        systemPeriods = data.frequencies.map(w => 2 * Math.PI / w);
-        initTabsAndCharts(systemPeriods); // Build tabs
+            // --- 1. עדכון הכפתורים בסרגל הצד (Sidebar) ---
+            const presetsDiv = document.getElementById('mode-presets');
+            presetsDiv.innerHTML = ''; // מנקים כפתורים ישנים
+            data.frequencies.forEach((w, i) => {
+                const freqHz = w / (2 * Math.PI);
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                // עיצוב מיוחד לכפתורי הצד: קטנים וכחלחלים
+                btn.style.cssText = "font-size:0.7rem; padding:2px 6px; flex:1; background:#0f172a; border-color:#38bdf8; color:#38bdf8;";
+                btn.innerText = `Set M${i+1} (${freqHz.toFixed(2)})`;
+                btn.title = `Set Frequency to Mode ${i+1} (${freqHz.toFixed(4)} Hz)`;
+                // שימוש באותה לוגיקה חכמה של ה-SET
+                btn.onclick = () => setFreqFromMode(freqHz, w);
+                presetsDiv.appendChild(btn);
+            });
 
-        let h = `<table class="modes-table"><tr><th>Mode</th><th>Freq</th><th>T</th></tr>`;
-        data.frequencies.forEach((w, i) => h += `<tr><td>${i + 1}</td><td>${(w / 6.28).toFixed(2)}Hz</td><td style="color:#38bdf8">${(6.28 / w).toFixed(3)}s</td></tr>`);
-        h += `</table><span class="mat-label">Mass [M]:</span>`;
-        data.M_matrix.forEach(r => h += `<div class="mat-row">[ ${r.map(n => n.toFixed(0)).join(", ")} ]</div>`);
-        h += `<span class="mat-label">Stiffness [K]:</span>`;
-        data.K_matrix.forEach(r => h += `<div class="mat-row">[ ${r.map(n => n.toExponential(1)).join(", ")} ]</div>`);
-        document.getElementById("results-area").innerHTML = h;
-    } catch (e) {
-        console.error(e);
-        document.getElementById("results-area").innerHTML = "<span style='color:red'>Server Error. Try refreshing.</span>";
+            // --- 2. בניית הטבלה (Results Table) ---
+            let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq</th><th>T</th><th>Action</th></tr>`;
+            data.frequencies.forEach((w,i)=> {
+                const freqHz = w / (2 * Math.PI);
+                h+=`<tr>
+                        <td>${i+1}</td>
+                        <td>${freqHz.toFixed(3)} Hz</td>
+                        <td style="color:#38bdf8">${(2*Math.PI/w).toFixed(3)}s</td>
+                        <td><button class="action-btn" style="font-size:0.7rem; padding:1px 4px; height:auto; min-height:0;" onclick="setFreqFromMode(${freqHz}, ${w})">Set</button></td>
+                    </tr>`;
+            });
+            h+=`</table><span class="mat-label">Mass [M] (kN·s²/m):</span>`;
+            data.M_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toFixed(2)).join(", ")} ]</div>`);
+            h+=`<span class="mat-label">Stiffness [K] (kN/m):</span>`;
+            data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toLocaleString('en-US', {maximumFractionDigits:0})).join(", ")} ]</div>`);
+            document.getElementById("results-area").innerHTML = h;
+
+        } catch(e){ console.error(e); document.getElementById("results-area").innerText = "Error calculating system properties. Is server running?"; }
     }
-}
 
 function drawFrame(disps) {
     const c = document.getElementById("vizCanvas");
