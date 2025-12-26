@@ -17,6 +17,7 @@ class ModalResult:
             "periods": self.periods.tolist(),
             "modes": self.modes.tolist(),
         }
+#hi
 
 
 class ModalAnalyzer:
@@ -38,3 +39,8 @@ class ModalAnalyzer:
         T_n = 2.0 * np.pi / w_n
 
         return ModalResult(frequencies=w_n, periods=T_n, modes=PHI)
+
+    def dekel(a):
+        if a:
+            print("aaaaa")
+        return
