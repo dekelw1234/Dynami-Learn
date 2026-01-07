@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from sim_core.structures import SingleDOF, ShearBuilding
 from sim_core.modal import ModalAnalyzer
+from sim_core.earthquakes import get_earthquake_force
 import asyncio
 
 
@@ -16,15 +17,40 @@ class StructureFactory:
 
     @staticmethod
     def create_shear_building(payload: dict):
-        Hc = np.array(payload["Hc"], dtype=float)
-        Lb = np.array(payload["Lb"], dtype=float)
-        Ec = np.array(payload["Ec"]) * 1.0e9
-        Ic = np.array(payload["Ic"])
+        def ensure_2d(data, dofs, cols=2):
+            arr = np.array(data, dtype=float)
+            if arr.ndim == 1:
+                if len(arr) != dofs:
+                    arr = np.full(dofs, arr[0] if len(arr) > 0 else 0.0)
+                return np.tile(arr[:, np.newaxis], (1, cols))
+            return arr
+
+        # קריאת המסה (בטונות)
+        raw_mass = payload.get("floor_mass")
+
+        if isinstance(raw_mass, list):
+            dofs = len(raw_mass)
+        else:
+            dofs = 2  # ברירת מחדל
+
+        Hc = ensure_2d(payload["Hc"], dofs)
+        Lb = ensure_2d(payload["Lb"], dofs)
+        Ic = ensure_2d(payload["Ic"], dofs)
+
+        Ec_raw = ensure_2d(payload["Ec"], dofs)
+        Ec = Ec_raw * 1.0e9
+
+        # === המרה מטונות לקילוגרם ===
+        if isinstance(raw_mass, list):
+            floor_mass_kg = np.array(raw_mass, dtype=float) * 1000.0
+        else:
+            floor_mass_kg = float(raw_mass) * 1000.0
+        # ===========================
 
         return ShearBuilding.from_floor_data(
             Hc=Hc, Ec=Ec, Ic=Ic, Lb=Lb,
             depth=float(payload["depth"]),
-            floor_load=float(payload["floor_load"]) * 1000.0,
+            floor_mass=floor_mass_kg,  # שולחים מסה בק"ג
             base_condition=int(payload.get("base_condition", 1))
         )
 
@@ -52,8 +78,6 @@ class TimeSimulationService:
 
         dofs = model.dofs
 
-        # --- תוקן: הגנה מפני קריסה בעת שינוי מספר קומות ---
-        # אם יש וקטור היסטוריה, נוודא שהוא באורך הנכון. אחרת - נתחיל מאפס.
         if x0_vec and len(x0_vec) == dofs:
             u = np.array(x0_vec, dtype=float)
         else:
@@ -63,7 +87,6 @@ class TimeSimulationService:
             v = np.array(v0_vec, dtype=float)
         else:
             v = np.zeros(dofs)
-        # --------------------------------------------------
 
         a = np.zeros(dofs)
 
@@ -73,8 +96,9 @@ class TimeSimulationService:
 
         modal = ModalAnalyzer(model).run()
         w = modal.frequencies
+
+        # הגנה למקרה שיש רק מוד אחד
         w1 = w[0]
-        # טיפול במקרה של SDOF שבו יש רק תדר אחד
         w2 = w[1] if len(w) > 1 else w[0] * 3
 
         A_mat = np.array([[1 / (2 * w1), w1 / 2], [1 / (2 * w2), w2 / 2]])
@@ -94,7 +118,7 @@ class TimeSimulationService:
         f_type = force_cfg.get("type", "pulse")
         f_dur = float(force_cfg.get("duration", 2.0))
 
-        # 5. Newmark-Beta
+        # 5. Newmark-Beta Init
         gamma = 0.5
         beta_const = 0.25
 
@@ -120,13 +144,21 @@ class TimeSimulationService:
 
         while t < end_time:
             F = np.zeros(dofs)
-            force_val = 0.0
-            if f_type == "pulse":
-                if t <= f_dur: force_val = f_amp * np.sin(f_freq * t)
-            else:
-                force_val = f_amp * np.sin(f_freq * t)
 
-            if dofs > 0: F[-1] = force_val
+            # לוגיקה מעודכנת לכוחות (כולל רעידת אדמה)
+            if f_type == "earthquake":
+                scale = float(force_cfg.get("amp", 1.0))
+                F = get_earthquake_force(t, M, scaling_factor=scale)
+
+            elif f_type == "pulse":
+                force_val = 0.0
+                if t <= f_dur:
+                    force_val = f_amp * np.sin(f_freq * t)
+                if dofs > 0: F[-1] = force_val
+
+            else:  # continuous
+                force_val = f_amp * np.sin(f_freq * t)
+                if dofs > 0: F[-1] = force_val
 
             term_M = a0 * u + a2 * v + a3 * a
             term_C = a1 * u + a4 * v + a5 * a

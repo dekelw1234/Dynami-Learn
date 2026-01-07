@@ -1,25 +1,16 @@
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # <-- ייבוא חדש
-from fastapi.responses import FileResponse  # <-- ייבוא חדש
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import json
 import os
 
-# וודא שהנתיב תקין (משתמשים ב-sim_app/services)
+# וודא שהייבוא תקין
 from sim_app.services import StructureFactory, ModalService, TimeSimulationService
 
 app = FastAPI()
 
-# הגדרות CORS (נשארות למקרה שתרצה לעבוד גם דרך PyCharm)
-origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://127.0.0.1:63342",
-    "http://localhost:63342",
-    "https://dekelw1234.github.io",
-    "null"
-]
-
+# הגדרות CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,6 +18,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# === הגדרת נתיבים לקבצים סטטיים ===
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+
+# 1. נתיב לדף הראשי
+@app.get("/")
+async def read_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+# 2. נתיב לקובץ ה-JavaScript (התיקון לבעיה שלך!)
+@app.get("/main.js")
+async def read_main_js():
+    return FileResponse(os.path.join(FRONTEND_DIR, "main.js"))
+
+# 3. נתיב לקובץ ה-CSS
+@app.get("/style.css")
+async def read_style_css():
+    return FileResponse(os.path.join(FRONTEND_DIR, "style.css"))
+
+# 4. מאפשר גישה לשאר הקבצים (כמו תמונות אם יהיו) דרך /static
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
 # === WebSocket Endpoint ===
@@ -43,6 +56,7 @@ async def websocket_endpoint(websocket: WebSocket):
         sim_req = payload.get("sim_req", {})
 
         if model_req:
+            # כאן המפעל שלך יקבל את המידע החדש (מערכים של מסה וקשיחות)
             model = StructureFactory.create_shear_building(model_req)
             simulator = TimeSimulationService()
             async for result in simulator.run(model, sim_req):
@@ -60,7 +74,7 @@ async def websocket_endpoint(websocket: WebSocket):
             pass
 
 
-# === API רגיל ===
+# === API רגיל (חישוב מטריצות) ===
 @app.post("/shear-building/modal")
 async def calculate_modal_properties(payload: dict):
     try:
@@ -72,19 +86,3 @@ async def calculate_modal_properties(payload: dict):
     except Exception as e:
         print(f"Error during Modal Calculation: {e}")
         raise HTTPException(status_code=500, detail=f"Server error: {e}")
-
-
-# === הגשת דף הבית (החלק החדש!) ===
-# מוודא שהשרת יודע איפה התיקייה נמצאת ביחס לקובץ המריץ
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
-
-
-# נתיב שמגיש את index.html כשנכנסים לכתובת הראשי (/)
-@app.get("/")
-async def read_index():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
-
-
-# (אופציונלי) אם בעתיד יהיו תמונות/CSS נפרדים, השורה הזו תאפשר גישה אליהם
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")

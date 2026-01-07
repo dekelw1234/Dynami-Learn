@@ -40,7 +40,4 @@ class ModalAnalyzer:
 
         return ModalResult(frequencies=w_n, periods=T_n, modes=PHI)
 
-    def dekel(a):
-        if a:
-            print("aaaaa")
-        return
+

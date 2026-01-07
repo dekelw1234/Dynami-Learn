@@ -1,29 +1,28 @@
 import numpy as np
 
+import numpy as np
+
 
 def mass_matrix_lumped(dofs: int,
                        Lb: np.ndarray,
                        depth: float,
-                       floor_load: float) -> np.ndarray:
+                       floor_load: np.ndarray) -> np.ndarray:  # <-- שינוי: עכשיו מצפים למערך
     """
-    תרגום של MassMat.m:
-    יצירת מטריצת מסה לוקלית לכל קומה על בסיס עומס רצפה.
+    יצירת מטריצת מסה.
+    floor_load: וקטור באורך dofs (או סקלר שיומר) המייצג עומס לכל קומה.
+    """
+    # המרה למערך למקרה שהגיע סקלר
+    if np.isscalar(floor_load):
+        floor_load = np.full(dofs, floor_load)
 
-    התוצאה ביחידות "מסה שקולה" כמו במטלאב:
-    area * floor_load / g
-    """
-    beam_length_per_story = np.sum(Lb, axis=1)  # סכום המפתחים בכל קומה
-    area = depth * beam_length_per_story        # שטח רצפה
+    beam_length_per_story = np.sum(Lb, axis=1)
+    area = depth * beam_length_per_story
+
     M = np.zeros((dofs, dofs), dtype=float)
-    print("DEBUG mass_matrix_lumped:")
-    print("  beam_length_per_story =", beam_length_per_story)
-    print("  depth =", depth)
-    print("  floor_load =", floor_load)
-    print("  area =", area)
+
     for i in range(dofs):
-        # floor_load בק״נ/מ^2, area במ״ר → kN
-        # חילוק ב-g → "טון" כמו בקוד MATLAB
-        M[i, i] = area[i] * floor_load / 9.807
+        # שימוש בערך הספציפי של הקומה i
+        M[i, i] = area[i] * floor_load[i] / 9.807
 
     return M
 

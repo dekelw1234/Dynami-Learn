@@ -55,61 +55,60 @@ class ShearBuilding(StructureModel):
                         Ic: np.ndarray,
                         Lb: np.ndarray,
                         depth: float,
-                        floor_load: float,
+                        floor_mass: np.ndarray | float,  # <-- שינוי שם: mass במקום load
                         base_condition: int = 1,
                         damping_ratio: float = 0.0) -> "ShearBuilding":
+
         dofs = Hc.shape[0]
 
-        # --- 🛡️ בדיקת תקינות (Validation Fix) ---
-        if Lb.shape[0] != dofs:
-            # אם מספר השורות ב-Lb לא תואם למספר הקומות, נתקן או נזרוק שגיאה.
-            # כאן נזרוק שגיאה ברורה כדי שתדע לתקן את ה-Frontend
-            raise ValueError(f"Mismatch: Hc implies {dofs} floors, but Lb has data for {Lb.shape[0]} floors.")
+        # בדיקות תקינות... (אותו דבר)
+        if Hc.shape != (dofs, 2) or Ec.shape != (dofs, 2) or Ic.shape != (dofs, 2) or Lb.shape != (dofs, 2):
+            raise ValueError("All input arrays must have shape (dofs, 2)")
 
-        # בדיקה גם ל-Ec ו-Ic
-        if Ec.shape[0] != dofs or Ic.shape[0] != dofs:
-            raise ValueError("Mismatch: Ec or Ic dimensions do not match number of floors (Hc).")
-        # ----------------------------------------
+        # ---- MASS (Direct Assignment) ----
+        # המרה למערך אם הגיע סקלר
+        if np.isscalar(floor_mass):
+            floor_mass = np.full(dofs, floor_mass)
 
-        # ---- MASS ----
-        M = mass_matrix_lumped(dofs, Lb, depth, floor_load)
+        # יצירת מטריצת מסה אלכסונית ישירות מהמסה שהתקבלה
+        M = np.diag(floor_mass)
 
-        # ---- STIFFNESS ----
-        K = stiffness_shear_structure(dofs, Hc, Ec, Ic, base=base_condition)
+        # ---- STIFFNESS (K) ----
+        # חישוב קשיחות נשאר ללא שינוי
+        k_story = np.zeros(dofs)
+        for i in range(dofs):
+            h = Hc[i, 0]
+            # חישוב קשיחות לכל עמוד
+            k_cols = 0.0
+            for col in range(2):
+                E = Ec[i, col]
+                I = Ic[i, col]
+                if base_condition == 0:  # Pinned
+                    k_c = (3 * E * I) / (h ** 3)
+                elif base_condition == 1:  # Fixed
+                    k_c = (12 * E * I) / (h ** 3)
+                else:  # Roller
+                    k_c = (12 * E * I) / (h ** 3)  # הנחה
+                k_cols += k_c
+            k_story[i] = k_cols
 
-        # ---- DAMPING (Rayleigh) ----
-        C = np.zeros_like(M)
-        if damping_ratio > 0.0:
-            eigvals, _ = np.linalg.eig(np.linalg.solve(M, K))
-            omega = np.sqrt(np.clip(np.real(eigvals), 0.0, None))
-            omega.sort()
+        K = np.zeros((dofs, dofs))
+        for i in range(dofs):
+            K[i, i] = k_story[i]
+            if i < dofs - 1:
+                K[i, i] += k_story[i + 1]
+                K[i, i + 1] = -k_story[i + 1]
+                K[i + 1, i] = -k_story[i + 1]
 
-            w1 = omega[0]
-            alpha0 = 0.0
-            alpha1 = 0.0
-
-            if dofs >= 2:
-                w2 = omega[1]
-                rel_diff = abs(w2 - w1) / max(w1, w2)
-                if rel_diff > 1e-3:
-                    A = np.array([[1.0 / w1, w1], [1.0 / w2, w2]])
-                    b = np.array([2.0 * damping_ratio, 2.0 * damping_ratio])
-                    alpha0, alpha1 = np.linalg.solve(A, b)
-                else:
-                    alpha0 = 2.0 * damping_ratio * w1
-                    alpha1 = 0.0
-            else:
-                alpha0 = 2.0 * damping_ratio * w1
-                alpha1 = 0.0
-
-            C = alpha0 * M + alpha1 * K
+        # ---- DAMPING (C) ----
+        # מטריצת C ראשונית (תעודכן בסימולציה לפי ריילי)
+        C = np.zeros_like(K)
 
         return cls(M=M, K=K, C=C,
                    Hc=Hc, Ec=Ec, Ic=Ic,
                    Lb=Lb, depth=depth,
-                   floor_load=floor_load,
+                   floor_load=0.0,  # לא רלוונטי יותר לאחסון
                    base_condition=base_condition)
-
 
 @dataclass
 class SingleDOF(StructureModel):
