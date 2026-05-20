@@ -5,13 +5,12 @@
 
 // --- 1. SERVER CONNECTION SETUP ---
 const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-const CLOUD_URL = "dynami-learn.onrender.com";
+const CLOUD_URL = "project360.auth.ad.bgu.ac.il";
 
-const API_URL = isLocal ? "http://127.0.0.1:8000" : `https://${CLOUD_URL}`;
-const WS_URL = isLocal ? "ws://127.0.0.1:8000/ws/simulate" : `wss://${CLOUD_URL}/ws/simulate`;
+const API_URL = isLocal ? "http://127.0.0.1:8000" : `http://${CLOUD_URL}:8000`;
+const WS_URL = isLocal ? "ws://127.0.0.1:8000/ws/simulate" : `ws://${CLOUD_URL}:8000/ws/simulate`;
 
 console.log(`Running in ${isLocal ? "LOCAL" : "CLOUD"} mode. Connected to: ${API_URL}`);
-
 // --- 2. GLOBAL VARIABLES ---
 let ws = null;
 let isRunning = false;
