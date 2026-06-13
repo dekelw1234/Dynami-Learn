@@ -611,7 +611,26 @@ function startWebSocket() {
             toggleSimulation();
         }
     };
-    ws.onclose = () => { if (isRunning) toggleSimulation(); };
+    ws.onclose = () => {
+        // Only act when the server closed the socket unexpectedly (simulation ended
+        // or network dropped). User-triggered stops (toggleSimulation / resetSimulation)
+        // set isRunning=false before the socket closes, so we skip those here.
+        if (!isRunning) return;
+
+        // Reset to a clean "stopped" state — not "paused", because the server
+        // has already ended the session and there is nothing to resume.
+        isRunning = false;
+        isPaused  = false;
+
+        const btn      = document.getElementById("btn-sim");
+        const speedSel = document.getElementById("sim-speed");
+        if (btn) {
+            btn.innerText = "Start";
+            btn.className = "action-btn start-btn";
+        }
+        document.body.classList.remove("sim-running");
+        if (speedSel) speedSel.disabled = false;
+    };
 }
 
 // --- 9. SERVER CALCULATION ---
