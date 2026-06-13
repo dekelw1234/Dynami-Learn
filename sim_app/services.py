@@ -67,9 +67,11 @@ class ModalService:
 class TimeSimulationService:
     async def run(self, model, payload: dict):
         # 1. הגדרות זמן
-        t0 = float(payload.get("t0", 0.0))
-        tf = 60.0
-        dt = float(payload.get("dt", 0.02))
+        t0    = float(payload.get("t0", 0.0))
+        tf    = 60.0
+        dt    = float(payload.get("dt", 0.02))
+        speed = max(float(payload.get("speed", 1.0)), 0.1)   # clamp: never 0
+        sleep_interval = 0.005 / speed
 
         # 2. קבלת תנאי התחלה (עבור Resume)
         init_cond = payload.get("initial_conditions", {})
@@ -180,4 +182,4 @@ class TimeSimulationService:
 
             u, v, a = u_next, v_next, a_next
             t += dt
-            await asyncio.sleep(0.005)
+            await asyncio.sleep(sleep_interval)

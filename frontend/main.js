@@ -524,11 +524,15 @@ function startWebSocket() {
     const numFVal = parseFloat(document.getElementById("num-F").value);
     const isEarthquake = forceType === "earthquake";
 
+    const speedSel = document.getElementById("sim-speed");
+    const simSpeed = speedSel ? parseFloat(speedSel.value) : 1.0;
+
     const wsPayload = {
         model_req: payload,
         sim_req: {
             t0: startT,
             dt: 0.02,
+            speed: simSpeed,
             force_function: {
                 type: forceType,
                 amp: isEarthquake ? numFVal : 1000,
