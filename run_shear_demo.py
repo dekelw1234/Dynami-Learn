@@ -29,8 +29,8 @@ def main():
         [5.0, 5.0],
     ])
 
-    depth = 10.0       # עומק המבנה (m)
-    floor_load = 20.0  # עומס רצפה אופייני (kN/m^2) – כמו בקוד MATLAB
+    depth = 10.0        # עומק המבנה (m)
+    floor_mass = 20.0   # מסה לקומה (ton)
 
     # ===== יצירת מודל ShearBuilding =====
     building = ShearBuilding.from_floor_data(
@@ -39,7 +39,7 @@ def main():
         Ic=Ic,
         Lb=Lb,
         depth=depth,
-        floor_load=floor_load,
+        floor_mass=floor_mass,
         base_condition=1,      # בסיס מקובע
         damping_ratio=0.0      # בינתיים בלי ריסון
     )

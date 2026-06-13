@@ -115,7 +115,7 @@ def test_shear_building_modal_consistency():
         [5.0, 5.0],
     ])
     depth = 10.0
-    floor_load = 20.0
+    floor_mass = 20.0
 
     building = ShearBuilding.from_floor_data(
         Hc=Hc,
@@ -123,7 +123,7 @@ def test_shear_building_modal_consistency():
         Ic=Ic,
         Lb=Lb,
         depth=depth,
-        floor_load=floor_load,
+        floor_mass=floor_mass,
         base_condition=1,
         damping_ratio=0.0,
     )
@@ -219,7 +219,7 @@ def test_modal_mass_orthogonality_for_shear_building():
         [5.0, 4.0],
     ])
     depth = 8.0
-    floor_load = 15.0
+    floor_mass = 15.0
 
     building = ShearBuilding.from_floor_data(
         Hc=Hc,
@@ -227,7 +227,7 @@ def test_modal_mass_orthogonality_for_shear_building():
         Ic=Ic,
         Lb=Lb,
         depth=depth,
-        floor_load=floor_load,
+        floor_mass=floor_mass,
         base_condition=1,
         damping_ratio=0.0,
     )

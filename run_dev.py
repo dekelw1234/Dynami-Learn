@@ -39,7 +39,7 @@ def build_debug_shear_building():
         Ic=Ic,
         Lb=Lb,
         depth=depth,
-        floor_load=floor_load,
+        floor_mass=floor_load,
         base_condition=base_condition,
         damping_ratio=damping_ratio,
     )

@@ -520,15 +520,19 @@ function startWebSocket() {
     const startT = isPaused ? lastState.t : 0;
     const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
 
+    const forceType = document.getElementById("force-type").value;
+    const numFVal = parseFloat(document.getElementById("num-F").value);
+    const isEarthquake = forceType === "earthquake";
+
     const wsPayload = {
         model_req: payload,
         sim_req: {
             t0: startT,
             dt: 0.02,
             force_function: {
-                type: document.getElementById("force-type").value,
-                amp: 1000,
-                freq: parseFloat(document.getElementById("num-F").value) * 2 * Math.PI,
+                type: forceType,
+                amp: isEarthquake ? numFVal : 1000,
+                freq: isEarthquake ? 0 : numFVal * 2 * Math.PI,
                 duration: parseFloat(document.getElementById("num-dur").value)
             },
             damping_ratios: getDampingValues(),
