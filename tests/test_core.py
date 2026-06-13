@@ -63,12 +63,15 @@ def test_mass_matrix_lumped_matches_manual():
     assert np.allclose(M, M_manual, rtol=1e-10)
 
 
-def test_stiffness_shear_structure_diag_like_matlab():
+def test_stiffness_shear_structure_tridiagonal():
     """
-    לפי StiffMat_ShearStructure.m ב-MATLAB:
-    בסוף K = diag(Kstory)
-    כאן אנחנו מאשרים שהתוצאה היא מטריצה דיאגונלית
-    והאלכסון שווה לסכום EI/H^3 לכל קומה.
+    Verifies that stiffness_shear_structure() produces the correct tridiagonal
+    shear-building stiffness matrix.
+
+    For story stiffnesses k = [k1, k2, k3] the assembled K must be:
+        K[i,i]   = k[i] + k[i+1]   (internal floors)
+        K[i,i+1] = K[i+1,i] = -k[i+1]
+        K[n-1,n-1] = k[n-1]         (top floor)
     """
     dofs = 3
     Hc = np.array([
@@ -81,19 +84,22 @@ def test_stiffness_shear_structure_diag_like_matlab():
 
     K = stiffness_shear_structure(dofs, Hc, Ec, Ic, base=1)
 
-    # חישוב ידני של Kstory
+    # Per-story stiffness: sum of both columns
     coeff_clamped = 12.0
     Kcol = (coeff_clamped * Ec * Ic) / (Hc ** 3)
-    Kstory_manual = np.sum(Kcol, axis=1)
-    K_manual = np.diag(Kstory_manual)
+    ks = np.sum(Kcol, axis=1)   # [k1, k2, k3]
+
+    # Build expected tridiagonal K manually
+    K_expected = np.zeros((dofs, dofs))
+    for i in range(dofs):
+        K_expected[i, i] = ks[i]
+        if i < dofs - 1:
+            K_expected[i, i]     += ks[i + 1]
+            K_expected[i, i + 1]  = -ks[i + 1]
+            K_expected[i + 1, i]  = -ks[i + 1]
 
     assert K.shape == (dofs, dofs)
-    # כל האיברים הלא-דיאגונליים צריכים להיות קרובים ל-0
-    off_diag = K.copy()
-    np.fill_diagonal(off_diag, 0.0)
-    assert np.allclose(off_diag, 0.0, atol=1e-8)
-
-    assert np.allclose(K, K_manual, rtol=1e-10)
+    assert np.allclose(K, K_expected, rtol=1e-10)
 
 
 def test_shear_building_modal_consistency():
