@@ -569,20 +569,31 @@ function startWebSocket() {
             lastState.all_x = msg.all_x;
             lastState.all_v = msg.all_v;
 
+            if (msg.all_x) {
+                const frameMax = Math.max(...msg.all_x.map(Math.abs));
+                if (frameMax > maxAbsDisp) maxAbsDisp = frameMax;
+            }
+
             const slider = document.getElementById('time-slider');
             if(slider) {
                 slider.max = msg.t;
                 if(isAutoScroll) slider.value = msg.t;
             }
 
-            activeCharts.forEach(obj => {
+            activeCharts.forEach((obj, i) => {
                 const chart = obj.chart;
                 const T = obj.period;
                 const normT = msg.t / T;
 
-                chart.data.datasets[0].data.push({ x: normT, y: msg.x });
-                chart.data.datasets[1].data.push({ x: normT, y: msg.v });
-                chart.data.datasets[2].data.push({ x: normT, y: msg.a });
+                const floorX = msg.all_x ? msg.all_x[i] : msg.x;
+                const floorV = msg.all_v ? msg.all_v[i] : msg.v;
+                // Acceleration is only broadcast for the top floor; use it on the
+                // last chart and null-out the others to avoid misleading data.
+                const floorA = (i === activeCharts.length - 1) ? msg.a : null;
+
+                chart.data.datasets[0].data.push({ x: normT, y: floorX });
+                chart.data.datasets[1].data.push({ x: normT, y: floorV });
+                if (floorA !== null) chart.data.datasets[2].data.push({ x: normT, y: floorA });
 
                 if (isAutoScroll) {
                     const win = 20;
