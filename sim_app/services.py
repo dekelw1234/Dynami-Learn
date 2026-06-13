@@ -177,7 +177,8 @@ class TimeSimulationService:
                 "v": v_next[-1],
                 "a": a_next[-1],
                 "all_x": u_next.tolist(),
-                "all_v": v_next.tolist()
+                "all_v": v_next.tolist(),
+                "all_a": a_next.tolist()
             }
 
             u, v, a = u_next, v_next, a_next

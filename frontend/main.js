@@ -501,7 +501,7 @@ function updateGraphVisibility() {
 }
 
 // --- 8. WEBSOCKET & SIMULATION CONTROL ---
-function toggleSimulation() {
+async function toggleSimulation() {
     const btn = document.getElementById("btn-sim");
     const speedSel = document.getElementById("sim-speed");
 
@@ -516,6 +516,13 @@ function toggleSimulation() {
         if(speedSel) speedSel.disabled = false;
 
     } else {
+        // Auto-calculate matrices if not done yet
+        if (systemPeriods.length === 0) {
+            btn.innerText = "Calculating...";
+            btn.disabled = true;
+            await calculateSystem();
+            btn.disabled = false;
+        }
         if(speedSel) speedSel.disabled = true;
         startWebSocket();
     }
@@ -639,9 +646,7 @@ function startWebSocket() {
 
                 const floorX = msg.all_x ? msg.all_x[i] : msg.x;
                 const floorV = msg.all_v ? msg.all_v[i] : msg.v;
-                // Acceleration is only broadcast for the top floor; use it on the
-                // last chart and null-out the others to avoid misleading data.
-                const floorA = (i === activeCharts.length - 1) ? msg.a : null;
+                const floorA = msg.all_a ? msg.all_a[i] : (i === activeCharts.length - 1 ? msg.a : null);
 
                 chart.data.datasets[0].data.push({ x: normT, y: floorX });
                 chart.data.datasets[1].data.push({ x: normT, y: floorV });
@@ -852,6 +857,25 @@ window.onTimeScroll = function() {
 };
 
 // --- 12. HELPERS & TOOLTIPS ---
+
+let currentFontSize = 14;
+function changeFontSize(delta) {
+    currentFontSize = Math.min(22, Math.max(10, currentFontSize + delta));
+    document.documentElement.style.fontSize = currentFontSize + 'px';
+}
+function resetFontSize() {
+    currentFontSize = 14;
+    document.documentElement.style.fontSize = '14px';
+}
+
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
 
 window.setFreqFromMode = function(freqHz, rawOmega) {
     const numInput = document.getElementById('num-F');
