@@ -1,0 +1,17 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.6, pytest-9.0.3, pluggy-1.6.0 -- C:\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\dekel\PycharmProjects\DL\Dynami-Learn
+collecting ... collected 9 items
+
+tests/test_core.py::test_single_dof_modal PASSED                         [ 11%]
+tests/test_core.py::test_mass_matrix_lumped_matches_manual PASSED        [ 22%]
+tests/test_core.py::test_stiffness_shear_structure_tridiagonal PASSED    [ 33%]
+tests/test_core.py::test_shear_building_modal_consistency PASSED         [ 44%]
+tests/test_core.py::test_time_history_single_dof_damped_decays PASSED    [ 55%]
+tests/test_core.py::test_single_dof_energy_conservation_without_damping PASSED [ 66%]
+tests/test_core.py::test_modal_mass_orthogonality_for_shear_building PASSED [ 77%]
+tests/test_core.py::test_damping_increase_reduces_response_amplitude PASSED [ 88%]
+tests/test_core.py::test_random_single_dof_models_are_stable_enough PASSED [100%]
+
+============================== 9 passed in 0.96s ==============================
