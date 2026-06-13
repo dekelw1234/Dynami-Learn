@@ -21,6 +21,7 @@ let activeCharts = [];
 let exactFreqFromSet = null;
 let isAutoScroll = true;
 let lastState = { t:0, all_x:null, all_v:null };
+let resultsDirty = true;
 
 // --- 3. CHART PLUGINS ---
 const quakePlugin = {
@@ -516,11 +517,26 @@ async function toggleSimulation() {
         if(speedSel) speedSel.disabled = false;
 
     } else {
-        // Auto-calculate matrices if not done yet
-        if (systemPeriods.length === 0) {
+        // Auto-calculate whenever results are stale
+        if (resultsDirty) {
+            const calcBtn = document.querySelector('.calc-btn');
+            // Visually activate the Calculate Matrices button
+            if (calcBtn) {
+                calcBtn.style.background = '#f59e0b';
+                calcBtn.style.color = '#000';
+                calcBtn.innerText = 'Calculating...';
+            }
             btn.innerText = "Calculating...";
             btn.disabled = true;
+
             await calculateSystem();
+
+            // Restore calc button
+            if (calcBtn) {
+                calcBtn.style.background = '';
+                calcBtn.style.color = '';
+                calcBtn.innerText = 'Calculate Matrices';
+            }
             btn.disabled = false;
         }
         if(speedSel) speedSel.disabled = true;
@@ -772,6 +788,8 @@ async function calculateSystem() {
         const resArea = document.getElementById("results-area");
         if(resArea) resArea.innerHTML = h;
 
+        resultsDirty = false;
+
     } catch(e){ console.error(e); }
 }
 
@@ -898,6 +916,7 @@ const tooltipsData = {
     "geometry": { title: "Geometry Parameters", text: "• Story Height (Hc): column clear height per floor [m].\n• Beam Span (Lb): center-to-center bay width [m].\n• Building Depth: out-of-plane dimension used for floor area [m].\n• These affect stiffness K and the tributary mass area." }
 };
 function invalidateResults() {
+    resultsDirty = true;
     const resArea = document.getElementById("results-area");
     if (!resArea) return;
 
