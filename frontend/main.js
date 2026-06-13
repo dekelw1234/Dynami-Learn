@@ -54,7 +54,7 @@ const quakePlugin = {
                 ctx.stroke();
                 ctx.fillStyle = '#10b981';
                 ctx.textAlign = 'left';
-                ctx.fillText('Quake End', xPixel + 5, yAxis.top + 10);
+                ctx.fillText('Force End', xPixel + 5, yAxis.top + 10);
                 ctx.restore();
             }
         }
@@ -203,7 +203,7 @@ function getModelPayload() {
     }
 
     const Hc_arr = Array(dofs).fill(3.0);
-    const Lb_arr = Array(dofs).fill([6.0, 6.0]);
+    const Lb_arr = Array.from({ length: dofs }, () => [6.0, 6.0]);
     const Ic_arr = Array(dofs).fill(I_val);
 
     return {
@@ -820,7 +820,7 @@ window.setFreqFromMode = function(freqHz, rawOmega) {
 const tooltipsData = {
     "stories": { title: "Stories (DOF)", text: "• SDOF (1): Single equation.\n• MDOF (2-3): Multiple coupled equations." },
     "E": { title: "Young's Modulus (E)", text: "• Material stiffness (Stress/Strain).\n• Higher E = Stiffer building." },
-    "mass": { title: "Floor Load (q)", text: "• Seismic weight [kN/m²].\n• Mass (M) = (q × Area) / g." },
+    "mass": { title: "Floor Mass (M)", text: "• Direct mass per floor [ton].\n• Each floor is configured independently." },
     "damping": { title: "Damping (ζ)", text: "• Energy loss coefficient.\n• 0.02 is standard for concrete." },
     "freq": { title: "Forcing Freq (ω)", text: "• External oscillation rate.\n• Matching natural freq = Resonance!" }
 };

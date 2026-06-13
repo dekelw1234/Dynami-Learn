@@ -78,7 +78,6 @@ class TimeIntegrator:
             r = M @ a[:, i] + C @ v[:, i] + K @ x[:, i] - f
             residual_norms.append(np.linalg.norm(r))
 
-        print("➡️ max residual =", max(residual_norms))
         # -----------------------------
 
         return TimeHistoryResult(t=sol.t, x=x, v=v, a=a)

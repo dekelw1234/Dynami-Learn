@@ -68,7 +68,7 @@ class TimeSimulationService:
     async def run(self, model, payload: dict):
         # 1. הגדרות זמן
         t0    = float(payload.get("t0", 0.0))
-        tf    = 60.0
+        tf    = float(payload.get("tf", 60.0))
         dt    = float(payload.get("dt", 0.02))
         speed = max(float(payload.get("speed", 1.0)), 0.1)   # clamp: never 0
         sleep_interval = 0.005 / speed

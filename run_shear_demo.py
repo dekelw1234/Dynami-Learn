@@ -41,7 +41,6 @@ def main():
         depth=depth,
         floor_mass=floor_mass,
         base_condition=1,      # בסיס מקובע
-        damping_ratio=0.0      # בינתיים בלי ריסון
     )
 
     print("DOFs:", building.dofs)
