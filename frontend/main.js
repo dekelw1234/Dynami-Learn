@@ -21,6 +21,7 @@ let activeCharts = [];
 let exactFreqFromSet = null;
 let isAutoScroll = true;
 let lastState = { t:0, all_x:null, all_v:null };
+let resultsDirty = true;
 
 // --- 3. CHART PLUGINS ---
 const quakePlugin = {
@@ -54,7 +55,7 @@ const quakePlugin = {
                 ctx.stroke();
                 ctx.fillStyle = '#10b981';
                 ctx.textAlign = 'left';
-                ctx.fillText('Quake End', xPixel + 5, yAxis.top + 10);
+                ctx.fillText('Force End', xPixel + 5, yAxis.top + 10);
                 ctx.restore();
             }
         }
@@ -79,6 +80,8 @@ window.onload = function() {
 
     // עדכון גיאומטריה
     updateProfileType();
+    syncInputs('Lb', true);
+    syncInputs('depth', true);
 
     // אתחול מצב הכפתורים (רעידת אדמה vs כוח)
     toggleDuration();
@@ -120,7 +123,7 @@ function renderPropertiesInputs() {
         container.appendChild(row);
     }
 
-    // --- Stiffness Section (ללא שינוי) ---
+    // --- Stiffness Section ---
     const stiffTitle = document.createElement('div');
     stiffTitle.className = 'label-row';
     stiffTitle.style.marginTop = "10px";
@@ -138,6 +141,30 @@ function renderPropertiesInputs() {
                 <div class="input-group" style="flex:1">
                     <input type="range" id="slide-E-${i}" min="10" max="50" value="${val}" oninput="syncProp('E', ${i}, true)">
                     <input type="number" id="num-E-${i}" value="${val}" min="1" max="50" oninput="syncProp('E', ${i}, false)" onchange="validateProp('E', ${i})">
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    // --- Story Height Section ---
+    const hcTitle = document.createElement('div');
+    hcTitle.className = 'label-row';
+    hcTitle.style.marginTop = "10px";
+    hcTitle.innerHTML = `<label>Story Height (Hc) [m]: <button class="info-btn" onclick="showTooltip('geometry', event)">i</button></label>`;
+    container.appendChild(hcTitle);
+
+    for (let i = 0; i < dofs; i++) {
+        const floorNum = i + 1;
+        const val = 3.0;
+        const row = document.createElement('div');
+        row.style.marginBottom = "4px";
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#94a3b8;">
+                <span style="width:20px;">F${floorNum}:</span>
+                <div class="input-group" style="flex:1">
+                    <input type="range" id="slide-Hc-${i}" min="2" max="6" step="0.1" value="${val}" oninput="syncProp('Hc', ${i}, true)">
+                    <input type="number" id="num-Hc-${i}" value="${val}" min="1" max="20" step="0.1" oninput="syncProp('Hc', ${i}, false)" onchange="validateProp('Hc', ${i})">
                 </div>
             </div>
         `;
@@ -202,8 +229,9 @@ function getModelPayload() {
         I_val = b * Math.pow(h, 3) / 12;
     }
 
-    const Hc_arr = Array(dofs).fill(3.0);
-    const Lb_arr = Array(dofs).fill([6.0, 6.0]);
+    const Hc_arr = Array.from({length: dofs}, (_, i) => parseFloat(document.getElementById(`num-Hc-${i}`)?.value ?? 3.0));
+    const lbVal  = parseFloat(document.getElementById('num-Lb')?.value ?? 6.0);
+    const Lb_arr = Array.from({length: dofs}, () => [lbVal, lbVal]);
     const Ic_arr = Array(dofs).fill(I_val);
 
     return {
@@ -211,7 +239,7 @@ function getModelPayload() {
         "Ec": Ec_arr,
         "Ic": Ic_arr,
         "Lb": Lb_arr,
-        "depth": 6.0,
+        "depth": parseFloat(document.getElementById('num-depth')?.value ?? 6.0),
         "floor_mass": floor_mass_arr, // <-- שליחת מפתח חדש
         "base_condition": 1,
         "damping_ratios": getDampingValues()
@@ -255,7 +283,10 @@ function syncInputs(id, fS) {
     // עדכון גיאומטריה (ויזואלי בלבד כרגע)
     if (['r', 'b', 'h'].includes(id)) {
         updateGeometry();
-        invalidateResults(); // <--- רק אם זו גיאומטריה, נבקש חישוב מחדש
+        invalidateResults();
+    }
+    if (['Lb', 'depth'].includes(id)) {
+        invalidateResults();
     }
 
     // עדכון טקסט תדר
@@ -352,6 +383,24 @@ function updateProfileType() {
     } else {
         b.innerHTML = `<div class="label-row"><label>Width (b) [m]:</label></div><div class="input-group"><input type="range" id="slide-b" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('b',true)"><input type="number" id="num-b" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('b',false)" onchange="validateInput('b')"></div><div class="label-row"><label>Height (h) [m]:</label></div><div class="input-group"><input type="range" id="slide-h" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('h',true)"><input type="number" id="num-h" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('h',false)" onchange="validateInput('h')"></div>`;
     }
+
+    // Preserve existing Lb/depth values if inputs already exist
+    const prevLb    = parseFloat(document.getElementById('num-Lb')?.value    ?? 6.0);
+    const prevDepth = parseFloat(document.getElementById('num-depth')?.value ?? 6.0);
+
+    b.innerHTML += `
+        <div class="label-row" style="margin-top:8px;"><label>Beam Span (Lb) [m]: <button class="info-btn" onclick="showTooltip('geometry', event)">i</button></label></div>
+        <div class="input-group">
+            <input type="range" id="slide-Lb" min="1" max="12" step="0.1" value="${prevLb}" oninput="syncInputs('Lb',true)">
+            <input type="number" id="num-Lb" value="${prevLb}" min="0.5" max="20" step="0.1" oninput="syncInputs('Lb',false)" onchange="validateInput('Lb')">
+        </div>
+        <div class="label-row" style="margin-top:4px;"><label>Building Depth [m]: <button class="info-btn" onclick="showTooltip('geometry', event)">i</button></label></div>
+        <div class="input-group">
+            <input type="range" id="slide-depth" min="1" max="20" step="0.1" value="${prevDepth}" oninput="syncInputs('depth',true)">
+            <input type="number" id="num-depth" value="${prevDepth}" min="0.5" max="50" step="0.1" oninput="syncInputs('depth',false)" onchange="validateInput('depth')">
+        </div>
+    `;
+
     updateGeometry();
     invalidateResults();
 }
@@ -453,7 +502,7 @@ function updateGraphVisibility() {
 }
 
 // --- 8. WEBSOCKET & SIMULATION CONTROL ---
-function toggleSimulation() {
+async function toggleSimulation() {
     const btn = document.getElementById("btn-sim");
     const speedSel = document.getElementById("sim-speed");
 
@@ -468,6 +517,28 @@ function toggleSimulation() {
         if(speedSel) speedSel.disabled = false;
 
     } else {
+        // Auto-calculate whenever results are stale
+        if (resultsDirty) {
+            const calcBtn = document.querySelector('.calc-btn');
+            // Visually activate the Calculate Matrices button
+            if (calcBtn) {
+                calcBtn.style.background = '#f59e0b';
+                calcBtn.style.color = '#000';
+                calcBtn.innerText = 'Calculating...';
+            }
+            btn.innerText = "Calculating...";
+            btn.disabled = true;
+
+            await calculateSystem();
+
+            // Restore calc button
+            if (calcBtn) {
+                calcBtn.style.background = '';
+                calcBtn.style.color = '';
+                calcBtn.innerText = 'Calculate Matrices';
+            }
+            btn.disabled = false;
+        }
         if(speedSel) speedSel.disabled = true;
         startWebSocket();
     }
@@ -520,15 +591,23 @@ function startWebSocket() {
     const startT = isPaused ? lastState.t : 0;
     const initialConds = isPaused ? { x0: lastState.all_x, v0: lastState.all_v } : {};
 
+    const forceType = document.getElementById("force-type").value;
+    const numFVal = parseFloat(document.getElementById("num-F").value);
+    const isEarthquake = forceType === "earthquake";
+
+    const speedSel = document.getElementById("sim-speed");
+    const simSpeed = speedSel ? parseFloat(speedSel.value) : 1.0;
+
     const wsPayload = {
         model_req: payload,
         sim_req: {
             t0: startT,
             dt: 0.02,
+            speed: simSpeed,
             force_function: {
-                type: document.getElementById("force-type").value,
-                amp: 1000,
-                freq: parseFloat(document.getElementById("num-F").value) * 2 * Math.PI,
+                type: forceType,
+                amp: isEarthquake ? numFVal : 1000,
+                freq: isEarthquake ? 0 : numFVal * 2 * Math.PI,
                 duration: parseFloat(document.getElementById("num-dur").value)
             },
             damping_ratios: getDampingValues(),
@@ -565,20 +644,29 @@ function startWebSocket() {
             lastState.all_x = msg.all_x;
             lastState.all_v = msg.all_v;
 
+            if (msg.all_x) {
+                const frameMax = Math.max(...msg.all_x.map(Math.abs));
+                if (frameMax > maxAbsDisp) maxAbsDisp = frameMax;
+            }
+
             const slider = document.getElementById('time-slider');
             if(slider) {
                 slider.max = msg.t;
                 if(isAutoScroll) slider.value = msg.t;
             }
 
-            activeCharts.forEach(obj => {
+            activeCharts.forEach((obj, i) => {
                 const chart = obj.chart;
                 const T = obj.period;
                 const normT = msg.t / T;
 
-                chart.data.datasets[0].data.push({ x: normT, y: msg.x });
-                chart.data.datasets[1].data.push({ x: normT, y: msg.v });
-                chart.data.datasets[2].data.push({ x: normT, y: msg.a });
+                const floorX = msg.all_x ? msg.all_x[i] : msg.x;
+                const floorV = msg.all_v ? msg.all_v[i] : msg.v;
+                const floorA = msg.all_a ? msg.all_a[i] : (i === activeCharts.length - 1 ? msg.a : null);
+
+                chart.data.datasets[0].data.push({ x: normT, y: floorX });
+                chart.data.datasets[1].data.push({ x: normT, y: floorV });
+                if (floorA !== null) chart.data.datasets[2].data.push({ x: normT, y: floorA });
 
                 if (isAutoScroll) {
                     const win = 20;
@@ -596,7 +684,26 @@ function startWebSocket() {
             toggleSimulation();
         }
     };
-    ws.onclose = () => { if (isRunning) toggleSimulation(); };
+    ws.onclose = () => {
+        // Only act when the server closed the socket unexpectedly (simulation ended
+        // or network dropped). User-triggered stops (toggleSimulation / resetSimulation)
+        // set isRunning=false before the socket closes, so we skip those here.
+        if (!isRunning) return;
+
+        // Reset to a clean "stopped" state — not "paused", because the server
+        // has already ended the session and there is nothing to resume.
+        isRunning = false;
+        isPaused  = false;
+
+        const btn      = document.getElementById("btn-sim");
+        const speedSel = document.getElementById("sim-speed");
+        if (btn) {
+            btn.innerText = "Start";
+            btn.className = "action-btn start-btn";
+        }
+        document.body.classList.remove("sim-running");
+        if (speedSel) speedSel.disabled = false;
+    };
 }
 
 // --- 9. SERVER CALCULATION ---
@@ -680,6 +787,8 @@ async function calculateSystem() {
 
         const resArea = document.getElementById("results-area");
         if(resArea) resArea.innerHTML = h;
+
+        resultsDirty = false;
 
     } catch(e){ console.error(e); }
 }
@@ -767,6 +876,25 @@ window.onTimeScroll = function() {
 
 // --- 12. HELPERS & TOOLTIPS ---
 
+let currentFontSize = 14;
+function changeFontSize(delta) {
+    currentFontSize = Math.min(22, Math.max(10, currentFontSize + delta));
+    document.documentElement.style.fontSize = currentFontSize + 'px';
+}
+function resetFontSize() {
+    currentFontSize = 14;
+    document.documentElement.style.fontSize = '14px';
+}
+
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
+
 window.setFreqFromMode = function(freqHz, rawOmega) {
     const numInput = document.getElementById('num-F');
     const rangeInput = document.getElementById('slide-F');
@@ -782,11 +910,13 @@ window.setFreqFromMode = function(freqHz, rawOmega) {
 const tooltipsData = {
     "stories": { title: "Stories (DOF)", text: "• SDOF (1): Single equation.\n• MDOF (2-3): Multiple coupled equations." },
     "E": { title: "Young's Modulus (E)", text: "• Material stiffness (Stress/Strain).\n• Higher E = Stiffer building." },
-    "mass": { title: "Floor Load (q)", text: "• Seismic weight [kN/m²].\n• Mass (M) = (q × Area) / g." },
+    "mass": { title: "Floor Mass (M)", text: "• Direct mass per floor [ton].\n• Each floor is configured independently." },
     "damping": { title: "Damping (ζ)", text: "• Energy loss coefficient.\n• 0.02 is standard for concrete." },
-    "freq": { title: "Forcing Freq (ω)", text: "• External oscillation rate.\n• Matching natural freq = Resonance!" }
+    "freq": { title: "Forcing Freq (ω)", text: "• External oscillation rate.\n• Matching natural freq = Resonance!" },
+    "geometry": { title: "Geometry Parameters", text: "• Story Height (Hc): column clear height per floor [m].\n• Beam Span (Lb): center-to-center bay width [m].\n• Building Depth: out-of-plane dimension used for floor area [m].\n• These affect stiffness K and the tributary mass area." }
 };
 function invalidateResults() {
+    resultsDirty = true;
     const resArea = document.getElementById("results-area");
     if (!resArea) return;
 

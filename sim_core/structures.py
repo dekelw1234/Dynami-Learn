@@ -55,9 +55,8 @@ class ShearBuilding(StructureModel):
                         Ic: np.ndarray,
                         Lb: np.ndarray,
                         depth: float,
-                        floor_mass: np.ndarray | float,  # <-- שינוי שם: mass במקום load
-                        base_condition: int = 1,
-                        damping_ratio: float = 0.0) -> "ShearBuilding":
+                        floor_mass: np.ndarray | float,
+                        base_condition: int = 1) -> "ShearBuilding":
 
         dofs = Hc.shape[0]
 
@@ -74,31 +73,7 @@ class ShearBuilding(StructureModel):
         M = np.diag(floor_mass)
 
         # ---- STIFFNESS (K) ----
-        # חישוב קשיחות נשאר ללא שינוי
-        k_story = np.zeros(dofs)
-        for i in range(dofs):
-            h = Hc[i, 0]
-            # חישוב קשיחות לכל עמוד
-            k_cols = 0.0
-            for col in range(2):
-                E = Ec[i, col]
-                I = Ic[i, col]
-                if base_condition == 0:  # Pinned
-                    k_c = (3 * E * I) / (h ** 3)
-                elif base_condition == 1:  # Fixed
-                    k_c = (12 * E * I) / (h ** 3)
-                else:  # Roller
-                    k_c = (12 * E * I) / (h ** 3)  # הנחה
-                k_cols += k_c
-            k_story[i] = k_cols
-
-        K = np.zeros((dofs, dofs))
-        for i in range(dofs):
-            K[i, i] = k_story[i]
-            if i < dofs - 1:
-                K[i, i] += k_story[i + 1]
-                K[i, i + 1] = -k_story[i + 1]
-                K[i + 1, i] = -k_story[i + 1]
+        K = stiffness_shear_structure(dofs, Hc, Ec, Ic, base=base_condition)
 
         # ---- DAMPING (C) ----
         # מטריצת C ראשונית (תעודכן בסימולציה לפי ריילי)

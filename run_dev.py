@@ -31,7 +31,6 @@ def build_debug_shear_building():
     depth = 6.0        # m
     floor_load = 10.0  # kN/m^2
     base_condition = 1
-    damping_ratio = 0.02
 
     model = ShearBuilding.from_floor_data(
         Hc=Hc,
@@ -39,9 +38,8 @@ def build_debug_shear_building():
         Ic=Ic,
         Lb=Lb,
         depth=depth,
-        floor_load=floor_load,
+        floor_mass=floor_load,
         base_condition=base_condition,
-        damping_ratio=damping_ratio,
     )
 
     return model
