@@ -5,12 +5,13 @@
 
 // --- 1. SERVER CONNECTION SETUP ---
 const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-const CLOUD_URL = "project360.auth.ad.bgu.ac.il";
 
-const API_URL = isLocal ? "http://127.0.0.1:8000" : `http://${CLOUD_URL}:8000`;
-const WS_URL = isLocal ? "ws://127.0.0.1:8000/ws/simulate" : `ws://${CLOUD_URL}:8000/ws/simulate`;
+const API_URL = isLocal ? "http://127.0.0.1:8000" : window.location.origin;
+const WS_URL  = isLocal
+    ? "ws://127.0.0.1:8000/ws/simulate"
+    : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/simulate`;
 
-console.log(`Running in ${isLocal ? "LOCAL" : "CLOUD"} mode. Connected to: ${API_URL}`);
+console.log(`Running in ${isLocal ? "LOCAL" : "PRODUCTION"} mode. Connected to: ${API_URL}`);
 // --- 2. GLOBAL VARIABLES ---
 let ws = null;
 let isRunning = false;
