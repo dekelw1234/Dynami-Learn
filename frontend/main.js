@@ -6,9 +6,9 @@
 // --- 1. SERVER CONNECTION SETUP ---
 const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
 
-const API_URL = isLocal ? "http://127.0.0.1:8000" : window.location.origin;
+const API_URL = isLocal ? `http://127.0.0.1:${window.location.port}` : window.location.origin;
 const WS_URL  = isLocal
-    ? "ws://127.0.0.1:8000/ws/simulate"
+    ? `ws://127.0.0.1:${window.location.port}/ws/simulate`
     : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/simulate`;
 
 console.log(`Running in ${isLocal ? "LOCAL" : "PRODUCTION"} mode. Connected to: ${API_URL}`);
@@ -947,6 +947,10 @@ function toggleTheme() {
 }
 
 function toggleFullScreen() {
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.toggle_fullscreen();
+        return;
+    }
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
     } else {

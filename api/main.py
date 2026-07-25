@@ -1,12 +1,33 @@
+import asyncio
+import json
+import math
+import os
+import sys
+
+# uvicorn's own "asyncio" loop factory hardcodes ProactorEventLoop on
+# Windows (uvicorn.loops.asyncio.asyncio_loop_factory), independent of
+# asyncio.set_event_loop_policy(). Under ProactorEventLoop, asyncio.sleep()
+# calls made from within a live ASGI connection's task (e.g. the pacing
+# sleep in TimeSimulationService.run()) resolve near-instantly instead of
+# actually waiting, which breaks streamed/paced WebSocket delivery — the
+# whole response body flushes in one burst. Force SelectorEventLoop instead,
+# which does not have this issue. Must run before uvicorn creates its loop,
+# i.e. before this module finishes importing.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    import uvicorn.loops.asyncio as _uvicorn_asyncio_loop
+
+    def _selector_loop_factory(use_subprocess: bool = False):
+        return asyncio.SelectorEventLoop
+
+    _uvicorn_asyncio_loop.asyncio_loop_factory = _selector_loop_factory
+
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator, ValidationError, model_validator
 from typing import Any, List, Literal, Optional, Union
-import json
-import math
-import os
 
 from sim_app.services import StructureFactory, ModalService, TimeSimulationService
 
@@ -137,7 +158,12 @@ app.add_middleware(
 )
 
 # === Static file serving ===
-BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# PyInstaller extracts bundled data files under sys._MEIPASS at runtime; a
+# normal (non-frozen) run resolves relative to this source file instead.
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 @app.get("/")

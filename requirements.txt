@@ -4,3 +4,4 @@ numpy
 scipy
 pydantic
 websockets
+pywebview
