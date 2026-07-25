@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynami-Learn | Professional Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -38,12 +41,28 @@
             }
         }
 
+        /* Manual theme override — wins over the @media query above */
+        :root[data-theme="dark"] {
+            --bg: #10160F; --bg-strip: #0B0F0B; --panel: #171F19; --panel-alt: #1C251E;
+            --border: #2A362D; --border-soft: #212B23; --text: #ECEBE3; --text-muted: #8FA091;
+            --text-dim: #64766A; --accent: #86B893; --accent-strong: #3E7C59;
+            --accent-strong-hover: #4B9169; --gold: #C9A227; --gold-hover: #DBB748;
+            --success: #6FAE7C; --warning: #D4A857; --danger: #C1666B; --canvas-bg: #0A0F0A;
+        }
+        :root[data-theme="light"] {
+            --bg: #EEF1EA; --bg-strip: #E4E9DF; --panel: #FFFFFF; --panel-alt: #F4F6F1;
+            --border: #D6DCCF; --border-soft: #E1E6DA; --text: #1B231D; --text-muted: #57685A;
+            --text-dim: #8B9A8D; --accent: #2F6B4A; --accent-strong: #2F6B4A;
+            --accent-strong-hover: #255A3D; --gold: #8A6A16; --gold-hover: #715614;
+            --success: #3F8557; --warning: #9C7A1F; --danger: #A14A44; --canvas-bg: #E4E9DF;
+        }
+
         html { font-size: 14px; }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
             margin: 0;
             display: flex;
             height: 100vh;
@@ -98,7 +117,7 @@
         .tool-btn:hover { background: var(--border); color: var(--text); border-color: var(--text-dim); }
         .fs-icon-btn { padding: 4px 10px; color: var(--accent); }
 
-        #inputs-area { display: flex; flex-direction: column; gap: 0.4rem; position: relative; flex: 1; }
+        #inputs-area { display: flex; flex-direction: column; gap: 0.65rem; position: relative; flex: 1; }
         #inputs-area.locked > .section { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
 
         #inputs-area.locked:hover::after {
@@ -140,7 +159,7 @@
 
         input[type="range"] { flex: 1; height: 4px; background: var(--border); border-radius: 2px; appearance: none; cursor: pointer; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent-strong); border-radius: 50%; cursor: pointer; }
-        input[type="number"] { width: 4.5em; background: var(--bg); color: var(--accent); border: 1px solid var(--border); padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
+        input[type="number"] { width: 4.5em; background: var(--bg); color: var(--accent); border: 1px solid var(--border); padding: 2px; border-radius: 3px; text-align: center; font-family: 'IBM Plex Mono', 'Consolas', ui-monospace, monospace; font-weight: bold; font-size: 0.8rem; }
         select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 3px; font-size: 0.8rem; width: 100%; }
         select:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -166,18 +185,27 @@
 
         .credit-footer { margin-top: 5px; padding-top: 5px; font-size: 0.7rem; color: var(--text-dim); text-align: center; border-top: 1px solid var(--border); line-height: 1.4; }
 
-        main { flex: 1; padding: 0.6rem; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 50% 50%; gap: 0.6rem; overflow: hidden; }
-        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        main { flex: 1; padding: 0.6rem; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(220px, 1fr); gap: 0.6rem; overflow: hidden; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; min-height: 320px; }
         .card-header { background: rgba(0,0,0,0.2); padding: 0 0.6rem; font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; min-height: 32px; flex-shrink: 0; }
         .card-body { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         .card-footer { padding: 0.4rem; border-top: 1px solid var(--border); background: rgba(0,0,0,0.1); flex-shrink: 0; }
 
-        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.9rem; padding: 0.6rem; color: var(--text); line-height: 1.5; overflow: auto; flex: 1; }
+        .matrix-container { font-family: 'IBM Plex Mono', 'Consolas', ui-monospace, monospace; font-size: 1.05rem; padding: 0.6rem; color: var(--text); line-height: 1.5; overflow: auto; flex: 1; }
         .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
         .modes-table th { text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--border); padding: 4px; }
-        .modes-table td { padding: 4px; border-bottom: 1px solid var(--border-soft); font-size: 0.85rem; }
+        .modes-table td { padding: 4px; border-bottom: 1px solid var(--border-soft); font-size: 0.95rem; }
         .mat-label { color: var(--text-muted); font-weight: bold; margin-top: 0.5rem; display: block; font-size: 0.8rem; }
-        .mat-row { display: flex; gap: 0.5rem; font-size: 0.9rem; color: var(--accent); white-space: nowrap; }
+        .mat-row { display: flex; gap: 0.5rem; font-size: 1rem; color: var(--accent); white-space: nowrap; }
+
+        .stat-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .stat-tile { background: var(--panel-alt); border: 1px solid var(--border-soft); border-radius: 5px; padding: 8px 10px; flex: 1; min-width: 100px; }
+        .stat-tile .k { font-size: 0.65rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); }
+        .stat-tile .v { font-family: 'IBM Plex Mono', 'Consolas', ui-monospace, monospace; font-size: 1.05rem; color: var(--accent); margin-top: 3px; font-variant-numeric: tabular-nums; }
+        .stat-tile .sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .stat-tile.primary { flex: 1.6; border: 1px solid var(--gold); background: rgba(201, 162, 39, 0.08); padding: 11px 13px; }
+        .stat-tile.primary .k { color: var(--gold); }
+        .stat-tile.primary .v { font-size: 1.35rem; color: var(--gold); }
 
         .tabs-header { display: flex; flex: 1; overflow-x: auto; height: 100%; }
         .tab-btn { padding: 0 12px; height: 100%; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid var(--border); transition: 0.2s; white-space: nowrap; }
@@ -227,6 +255,7 @@
             <button class="tool-btn" onclick="resetFontSize()">Reset Font</button>
             <button class="tool-btn" onclick="changeFontSize(1)">A+</button>
         </div>
+        <button class="tool-btn" id="btn-theme" onclick="toggleTheme()" title="Toggle light/dark theme">◑</button>
         <button class="tool-btn fs-icon-btn" onclick="toggleFullScreen()" title="Full Screen">⛶</button>
     </div>
 

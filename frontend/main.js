@@ -12,6 +12,12 @@ const WS_URL  = isLocal
     : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/simulate`;
 
 console.log(`Running in ${isLocal ? "LOCAL" : "PRODUCTION"} mode. Connected to: ${API_URL}`);
+
+// Fixed structural geometry values — not wired into the physics (Lb/depth don't affect K or M
+// in the current codebase), kept as named constants to document intent and avoid magic numbers.
+const FIXED_BEAM_SPAN_M      = 6.0;  // Lb  — center-to-center bay width [m]
+const FIXED_BUILDING_DEPTH_M = 6.0;  // depth — out-of-plane dimension [m]
+
 // --- 2. GLOBAL VARIABLES ---
 let ws = null;
 let isRunning = false;
@@ -24,7 +30,21 @@ let isAutoScroll = true;
 let lastState = { t:0, all_x:null, all_v:null };
 let resultsDirty = true;
 
-// --- 3. CHART PLUGINS ---
+// --- 3. CANVAS / CHART PALETTE HELPER ---
+function getCanvasPalette() {
+    const attr = document.documentElement.getAttribute('data-theme');
+    const isDark = attr === 'dark'
+        || (attr === null && !window.matchMedia('(prefers-color-scheme: light)').matches);
+    return isDark
+        ? { bg: '#0A0F0A', grid: '#212B23', text: '#ECEBE3', textMuted: '#8FA091',
+            accent: '#86B893', accentFill: 'rgba(134,184,147,0.15)',
+            danger: '#C1666B', success: '#6FAE7C', gold: '#C9A227' }
+        : { bg: '#E4E9DF', grid: '#E1E6DA', text: '#1B231D', textMuted: '#57685A',
+            accent: '#2F6B4A', accentFill: 'rgba(47,107,74,0.12)',
+            danger: '#A14A44', success: '#3F8557', gold: '#8A6A16' };
+}
+
+// --- 4. CHART PLUGINS ---
 const quakePlugin = {
     id: 'quakeLine',
     afterDraw: (chart) => {
@@ -51,10 +71,10 @@ const quakePlugin = {
                 ctx.moveTo(xPixel, yAxis.top);
                 ctx.lineTo(xPixel, yAxis.bottom);
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = '#10b981';
+                ctx.strokeStyle = getCanvasPalette().success;
                 ctx.setLineDash([5, 5]);
                 ctx.stroke();
-                ctx.fillStyle = '#10b981';
+                ctx.fillStyle = getCanvasPalette().success;
                 ctx.textAlign = 'left';
                 ctx.fillText('Force End', xPixel + 5, yAxis.top + 10);
                 ctx.restore();
@@ -67,6 +87,10 @@ Chart.register(quakePlugin);
 // --- 4. INITIALIZATION ---
 window.onload = function() {
     console.log("Initializing Application...");
+
+    // Apply saved theme before first render
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
 
     // הגדרת ברירת מחדל
     const dofSelect = document.getElementById('dof-select');
@@ -81,8 +105,6 @@ window.onload = function() {
 
     // עדכון גיאומטריה
     updateProfileType();
-    syncInputs('Lb', true);
-    syncInputs('depth', true);
 
     // אתחול מצב הכפתורים (רעידת אדמה vs כוח)
     toggleDuration();
@@ -231,8 +253,7 @@ function getModelPayload() {
     }
 
     const Hc_arr = Array.from({length: dofs}, (_, i) => parseFloat(document.getElementById(`num-Hc-${i}`)?.value ?? 3.0));
-    const lbVal  = parseFloat(document.getElementById('num-Lb')?.value ?? 6.0);
-    const Lb_arr = Array.from({length: dofs}, () => [lbVal, lbVal]);
+    const Lb_arr = Array.from({length: dofs}, () => [FIXED_BEAM_SPAN_M, FIXED_BEAM_SPAN_M]);
     const Ic_arr = Array(dofs).fill(I_val);
 
     return {
@@ -240,7 +261,7 @@ function getModelPayload() {
         "Ec": Ec_arr,
         "Ic": Ic_arr,
         "Lb": Lb_arr,
-        "depth": parseFloat(document.getElementById('num-depth')?.value ?? 6.0),
+        "depth": FIXED_BUILDING_DEPTH_M,
         "floor_mass": floor_mass_arr, // <-- שליחת מפתח חדש
         "base_condition": 1,
         "damping_ratios": getDampingValues()
@@ -286,10 +307,6 @@ function syncInputs(id, fS) {
         updateGeometry();
         invalidateResults();
     }
-    if (['Lb', 'depth'].includes(id)) {
-        invalidateResults();
-    }
-
     // עדכון טקסט תדר
     if(id==='F') {
         const isQuake = document.getElementById('force-type').value === 'earthquake';
@@ -385,23 +402,6 @@ function updateProfileType() {
         b.innerHTML = `<div class="label-row"><label>Width (b) [m]:</label></div><div class="input-group"><input type="range" id="slide-b" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('b',true)"><input type="number" id="num-b" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('b',false)" onchange="validateInput('b')"></div><div class="label-row"><label>Height (h) [m]:</label></div><div class="input-group"><input type="range" id="slide-h" min="0.1" max="1.0" step="0.01" value="0.4" oninput="syncInputs('h',true)"><input type="number" id="num-h" value="0.4" min="0.01" max="1.0" step="0.01" oninput="syncInputs('h',false)" onchange="validateInput('h')"></div>`;
     }
 
-    // Preserve existing Lb/depth values if inputs already exist
-    const prevLb    = parseFloat(document.getElementById('num-Lb')?.value    ?? 6.0);
-    const prevDepth = parseFloat(document.getElementById('num-depth')?.value ?? 6.0);
-
-    b.innerHTML += `
-        <div class="label-row" style="margin-top:8px;"><label>Beam Span (Lb) [m]: <button class="info-btn" onclick="showTooltip('geometry', event)">i</button></label></div>
-        <div class="input-group">
-            <input type="range" id="slide-Lb" min="1" max="12" step="0.1" value="${prevLb}" oninput="syncInputs('Lb',true)">
-            <input type="number" id="num-Lb" value="${prevLb}" min="0.5" max="20" step="0.1" oninput="syncInputs('Lb',false)" onchange="validateInput('Lb')">
-        </div>
-        <div class="label-row" style="margin-top:4px;"><label>Building Depth [m]: <button class="info-btn" onclick="showTooltip('geometry', event)">i</button></label></div>
-        <div class="input-group">
-            <input type="range" id="slide-depth" min="1" max="20" step="0.1" value="${prevDepth}" oninput="syncInputs('depth',true)">
-            <input type="number" id="num-depth" value="${prevDepth}" min="0.5" max="50" step="0.1" oninput="syncInputs('depth',false)" onchange="validateInput('depth')">
-        </div>
-    `;
-
     updateGeometry();
     invalidateResults();
 }
@@ -459,24 +459,25 @@ function initTabsAndCharts(periods) {
         body.appendChild(contentDiv);
 
         const ctx = canvas.getContext('2d');
+        const pal = getCanvasPalette();
         const newChart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Disp', data: [], borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-x').checked },
-                    { label: 'Vel', data: [], borderColor: '#10b981', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-v').checked },
-                    { label: 'Acc', data: [], borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-a').checked }
+                    { label: 'Disp', data: [], borderColor: pal.accent, backgroundColor: pal.accentFill, fill: true, borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-x').checked },
+                    { label: 'Vel',  data: [], borderColor: pal.success, borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-v').checked },
+                    { label: 'Acc',  data: [], borderColor: pal.gold,    borderWidth: 2, pointRadius: 0, hidden: !document.getElementById('chk-a').checked }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
                 scales: {
                     x: {
-                        type: 'linear', min: 0, max: 20, grid: { color: '#334155' },
-                        title: { display: true, text: `Normalized Time (t / T${modeNum})`, color: '#94a3b8' },
+                        type: 'linear', min: 0, max: 20, grid: { color: pal.grid },
+                        title: { display: true, text: `Normalized Time (t / T${modeNum})`, color: pal.textMuted },
                         customPeriod: T
                     },
-                    y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', callback: (v) => Number(v).toExponential(1) } }
+                    y: { grid: { color: pal.grid }, ticks: { color: pal.textMuted, callback: (v) => Number(v).toExponential(1) } }
                 },
                 plugins: { legend: { display: false } }
             }
@@ -749,6 +750,21 @@ async function calculateSystem() {
             });
         }
 
+        // === At-a-glance summary tiles — one per mode ===
+        let stats = '<div class="stat-row">';
+        data.frequencies.forEach((w, i) => {
+            const fHz = (w / (2 * Math.PI)).toFixed(2);
+            const Ti  = (2 * Math.PI / w).toFixed(3);
+            const zi  = (getDampingValues()[i] ?? getDampingValues()[0] ?? 0).toFixed(3);
+            const isPrimary = i === 0;
+            stats += `<div class="stat-tile${isPrimary ? ' primary' : ''}">
+                <div class="k">${isPrimary ? 'Mode 1 &middot; Fundamental' : `Mode ${i + 1}`}</div>
+                <div class="v">${Ti} s</div>
+                <div class="sub">${fHz} Hz &middot; &zeta;=${zi}</div>
+            </div>`;
+        });
+        stats += '</div>';
+
         // === יצירת טבלת התוצאות + הצגת העומס המחושב ===
         let h=`<table class="modes-table"><tr><th>Mode</th><th>Freq</th><th>T</th><th>Action</th></tr>`;
         data.frequencies.forEach((w,i)=> {
@@ -786,7 +802,7 @@ async function calculateSystem() {
         data.K_matrix.forEach(r=>h+=`<div class="mat-row">[ ${r.map(n=>(n/1000).toLocaleString('en-US', {maximumFractionDigits:0})).join(", ")} ]</div>`);
 
         const resArea = document.getElementById("results-area");
-        if(resArea) resArea.innerHTML = h;
+        if(resArea) resArea.innerHTML = stats + h;
 
         resultsDirty = false;
 
@@ -802,20 +818,34 @@ function drawFrame(disps) {
     c.width = r.width;
     c.height = r.height;
 
+    const pal = getCanvasPalette();
     const w = c.width, h = c.height, f = disps.length;
     const dMax = Math.max(maxAbsDisp, 0.001);
     const sX = (w * 0.3) / dMax;
     const fH = (h * 0.8) / f;
 
-    ctx.fillStyle = "#000";
+    // Background
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, w, h);
-    ctx.lineWidth = 3;
+
+    // Blueprint grid
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = pal.grid;
+    ctx.beginPath();
+    const gridStep = 40;
+    for (let gx = 0; gx < w; gx += gridStep) { ctx.moveTo(gx, 0); ctx.lineTo(gx, h); }
+    for (let gy_line = 0; gy_line < h; gy_line += gridStep) { ctx.moveTo(0, gy_line); ctx.lineTo(w, gy_line); }
+    ctx.stroke();
+
     ctx.lineCap = "round";
 
     const cx = w / 2, gy = h - 20;
-    const groundWidth = 400, buildWidth = 200;
+    const groundWidth = w * 0.7;
+    const buildWidth  = Math.min(w * 0.32, 260);
 
-    ctx.strokeStyle = "#444";
+    // Ground baseline
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = pal.grid;
     ctx.beginPath();
     ctx.moveTo(cx - groundWidth/2, gy);
     ctx.lineTo(cx + groundWidth/2, gy);
@@ -827,18 +857,19 @@ function drawFrame(disps) {
         const xTop = disps[i] * sX;
         const halfW = buildWidth/2;
 
-        ctx.strokeStyle = "#86B893";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = pal.accent;
         ctx.beginPath(); ctx.moveTo(cx - halfW + xB, yB); ctx.lineTo(cx - halfW + xTop, yT); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx + halfW + xB, yB); ctx.lineTo(cx + halfW + xTop, yT); ctx.stroke();
 
-        ctx.strokeStyle = "#fff";
+        ctx.strokeStyle = pal.text;
         ctx.beginPath(); ctx.moveTo(cx - halfW + xTop, yT); ctx.lineTo(cx + halfW + xTop, yT); ctx.stroke();
 
-        ctx.fillStyle = "#C1666B";
+        ctx.fillStyle = pal.danger;
         ctx.beginPath(); ctx.arc(cx + xTop, yT, 6, 0, 6.28); ctx.fill();
 
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 14px Consolas";
+        ctx.fillStyle = pal.text;
+        ctx.font = "bold 14px 'IBM Plex Mono', Consolas";
         ctx.textAlign = "center";
         ctx.fillText(`M${i+1}`, cx + xTop, yT - 15);
     }
@@ -886,6 +917,35 @@ function resetFontSize() {
     document.documentElement.style.fontSize = '14px';
 }
 
+function toggleTheme() {
+    const el = document.documentElement;
+    const attr = el.getAttribute('data-theme');
+    const isDark = attr === 'dark'
+        || (attr === null && !window.matchMedia('(prefers-color-scheme: light)').matches);
+    const next = isDark ? 'light' : 'dark';
+    el.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+
+    // Update all live Chart.js instances
+    const pal = getCanvasPalette();
+    activeCharts.forEach(obj => {
+        const ch = obj.chart;
+        ch.data.datasets[0].borderColor     = pal.accent;
+        ch.data.datasets[0].backgroundColor = pal.accentFill;
+        ch.data.datasets[1].borderColor     = pal.success;
+        ch.data.datasets[2].borderColor     = pal.gold;
+        ch.options.scales.x.grid.color      = pal.grid;
+        ch.options.scales.x.title.color     = pal.textMuted;
+        ch.options.scales.y.grid.color      = pal.grid;
+        ch.options.scales.y.ticks.color     = pal.textMuted;
+        ch.update('none');
+    });
+
+    // Redraw building canvas with new palette
+    const dofs = parseInt(document.getElementById('dof-select').value) || 2;
+    drawFrame(lastState.all_x || new Array(dofs).fill(0));
+}
+
 function toggleFullScreen() {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -913,7 +973,7 @@ const tooltipsData = {
     "mass": { title: "Floor Mass (M)", text: "• Direct mass per floor [ton].\n• Each floor is configured independently." },
     "damping": { title: "Damping (ζ)", text: "• Energy loss coefficient.\n• 0.02 is standard for concrete." },
     "freq": { title: "Forcing Freq (ω)", text: "• External oscillation rate.\n• Matching natural freq = Resonance!" },
-    "geometry": { title: "Geometry Parameters", text: "• Story Height (Hc): column clear height per floor [m].\n• Beam Span (Lb): center-to-center bay width [m].\n• Building Depth: out-of-plane dimension used for floor area [m].\n• These affect stiffness K and the tributary mass area." }
+    "geometry": { title: "Story Height (Hc)", text: "• Column clear height per floor [m].\n• Directly controls lateral story stiffness: K ∝ EI/H³.\n• Taller stories → lower stiffness → lower natural frequencies." }
 };
 function invalidateResults() {
     resultsDirty = true;
