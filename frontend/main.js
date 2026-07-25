@@ -13,6 +13,18 @@ const WS_URL  = isLocal
 
 console.log(`Running in ${isLocal ? "LOCAL" : "PRODUCTION"} mode. Connected to: ${API_URL}`);
 
+// The fullscreen button uses the browser Fullscreen API, which pywebview's
+// native window doesn't support — hide it there instead of leaving a dead button.
+function hideFullscreenBtnInDesktopApp() {
+    const fsBtn = document.querySelector('.fs-icon-btn');
+    if (fsBtn) fsBtn.style.display = 'none';
+}
+if (window.pywebview) {
+    hideFullscreenBtnInDesktopApp();
+} else {
+    window.addEventListener('pywebviewready', hideFullscreenBtnInDesktopApp);
+}
+
 // Fixed structural geometry values — not wired into the physics (Lb/depth don't affect K or M
 // in the current codebase), kept as named constants to document intent and avoid magic numbers.
 const FIXED_BEAM_SPAN_M      = 6.0;  // Lb  — center-to-center bay width [m]
@@ -947,10 +959,6 @@ function toggleTheme() {
 }
 
 function toggleFullScreen() {
-    if (window.pywebview && window.pywebview.api) {
-        window.pywebview.api.toggle_fullscreen();
-        return;
-    }
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
     } else {

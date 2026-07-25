@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 import numpy as np
 from sim_core.structures import SingleDOF, ShearBuilding
 from sim_core.modal import ModalAnalyzer
@@ -148,6 +149,16 @@ class TimeSimulationService:
         t = t0
         end_time = t0 + tf
 
+        # Windows' asyncio event loop has a ~16ms timer floor, so sleeping
+        # after every single dt-step rounds up to the same ~16ms regardless
+        # of speed, making the speed setting a no-op below that threshold.
+        # Batch just enough steps per sleep to clear the floor — no more,
+        # or slower speeds (already above the floor) get a stutter of
+        # several instant updates followed by an oversized pause instead of
+        # smooth per-step delivery.
+        SLEEP_BATCH = max(1, math.ceil(0.016 / sleep_interval))
+        steps_since_sleep = 0
+
         while t < end_time:
             F = np.zeros(dofs)
 
@@ -187,4 +198,10 @@ class TimeSimulationService:
 
             u, v, a = u_next, v_next, a_next
             t += dt
-            await asyncio.sleep(sleep_interval)
+            steps_since_sleep += 1
+            if steps_since_sleep >= SLEEP_BATCH:
+                await asyncio.sleep(SLEEP_BATCH * sleep_interval)
+                steps_since_sleep = 0
+
+        if steps_since_sleep > 0:
+            await asyncio.sleep(steps_since_sleep * sleep_interval)
