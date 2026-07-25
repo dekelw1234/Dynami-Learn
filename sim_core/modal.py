@@ -35,7 +35,13 @@ class ModalAnalyzer:
         w_n = np.sqrt(np.real(eigvals))
         idx = np.argsort(w_n)
         w_n = w_n[idx]
-        PHI = eigvecs[:, idx]
+        # np.linalg.eig can return complex128-dtype eigenvectors even when
+        # every imaginary part is zero (LAPACK backend-dependent for a
+        # general, non-symmetric matrix like M^-1 K). Mode shapes of a real
+        # M/K system are real-valued, so any imaginary component here is
+        # numerical noise — discard it, or PHI.tolist() produces Python
+        # complex numbers that json.dumps can't serialize.
+        PHI = np.real(eigvecs[:, idx])
         T_n = 2.0 * np.pi / w_n
 
         return ModalResult(frequencies=w_n, periods=T_n, modes=PHI)
