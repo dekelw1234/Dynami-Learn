@@ -6,6 +6,8 @@ from sim_core.matrices import caughey_damping
 from sim_core.earthquakes import get_earthquake_force
 import asyncio
 
+MAX_STEPS = 100_000  # upper bound on Newmark integration steps per simulation
+
 
 class StructureFactory:
     @staticmethod
@@ -125,6 +127,19 @@ class TimeSimulationService:
             K_hat_inv = np.linalg.inv(K_hat)
         except:
             K_hat_inv = np.linalg.pinv(K_hat)
+
+        # Step count guard — reject before allocating anything in the loop
+        n_steps = int((tf) / dt)
+        if n_steps > MAX_STEPS:
+            yield {
+                "type": "ERROR",
+                "message": (
+                    f"Requested {n_steps} steps (tf={tf}, dt={dt}); "
+                    f"maximum allowed is MAX_STEPS={MAX_STEPS}. "
+                    "Increase dt or reduce tf."
+                ),
+            }
+            return
 
         # שידור ראשוני
         yield {"type": "INIT", "dofs": dofs, "periods": w.tolist(), "duration": f_dur}

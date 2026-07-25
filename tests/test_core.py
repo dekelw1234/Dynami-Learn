@@ -637,3 +637,130 @@ def test_caughey_damping_sdof_matches_classical():
     assert np.isclose(C[0, 0], c_classical, rtol=1e-10), (
         f"SDOF Caughey C={C[0,0]:.6f}, classical c={c_classical:.6f}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Security / resource-limit tests
+# ---------------------------------------------------------------------------
+
+def _make_valid_model_req_dict(dofs=3):
+    """Return a minimal valid ModelRequest dict for use in security tests."""
+    return {
+        "Hc":         [[3.0, 3.0]] * dofs,
+        "Ec":         [[30.0, 30.0]] * dofs,
+        "Ic":         [[0.002, 0.002]] * dofs,
+        "Lb":         [[6.0, 6.0]] * dofs,
+        "depth":      6.0,
+        "floor_mass": 10.0,
+        "base_condition": 1,
+    }
+
+
+def test_model_request_rejects_too_many_dofs():
+    """ModelRequest must reject dofs > MAX_DOFS (prevents unbounded matrix allocation)."""
+    from pydantic import ValidationError as PydanticValidationError
+    from api.main import ModelRequest, MAX_DOFS
+
+    d = _make_valid_model_req_dict(dofs=MAX_DOFS + 1)
+    with pytest.raises(PydanticValidationError) as exc_info:
+        ModelRequest.model_validate(d)
+
+    errors = exc_info.value.errors()
+    messages = " ".join(e["msg"] for e in errors)
+    assert "MAX_DOFS" in messages or str(MAX_DOFS) in messages, (
+        f"Expected MAX_DOFS in error message, got: {messages}"
+    )
+
+
+def test_model_request_rejects_mismatched_array_lengths():
+    """ModelRequest must catch inconsistent story-array lengths (Ec shorter than Hc)."""
+    from pydantic import ValidationError as PydanticValidationError
+    from api.main import ModelRequest
+
+    d = _make_valid_model_req_dict(dofs=3)
+    d["Ec"] = [[30.0, 30.0], [30.0, 30.0]]   # 2 rows instead of 3
+
+    with pytest.raises(PydanticValidationError) as exc_info:
+        ModelRequest.model_validate(d)
+
+    messages = " ".join(e["msg"] for e in exc_info.value.errors())
+    assert "Ec" in messages
+
+
+def test_model_request_rejects_nan_and_inf():
+    """ModelRequest must reject NaN and Inf in physical arrays (prevents silent bad math)."""
+    from pydantic import ValidationError as PydanticValidationError
+    from api.main import ModelRequest
+    import math
+
+    for bad_value in [float("nan"), float("inf"), float("-inf")]:
+        d = _make_valid_model_req_dict(dofs=2)
+        d["Hc"][0][0] = bad_value
+        with pytest.raises(PydanticValidationError):
+            ModelRequest.model_validate(d)
+
+
+def test_model_request_rejects_non_positive_physical_values():
+    """Hc, Ec, Ic must be strictly positive; zero or negative must raise ValidationError."""
+    from pydantic import ValidationError as PydanticValidationError
+    from api.main import ModelRequest
+
+    for field, idx in [("Hc", 0), ("Ec", 0), ("Ic", 0)]:
+        d = _make_valid_model_req_dict(dofs=2)
+        d[field][0][idx] = 0.0   # zero is invalid for these fields
+        with pytest.raises(PydanticValidationError, match=r"must be > 0"):
+            ModelRequest.model_validate(d)
+
+        d[field][0][idx] = -1.0
+        with pytest.raises(PydanticValidationError, match=r"must be > 0"):
+            ModelRequest.model_validate(d)
+
+
+def test_sim_request_rejects_out_of_bounds_fields():
+    """SimRequest must enforce tf<=MAX_TF, dt>=MIN_DT, speed<=MAX_SPEED bounds."""
+    from pydantic import ValidationError as PydanticValidationError
+    from api.main import SimRequest, MAX_TF, MIN_DT, MAX_SPEED
+
+    with pytest.raises(PydanticValidationError):
+        SimRequest(tf=MAX_TF + 1.0)   # exceeds cap
+
+    with pytest.raises(PydanticValidationError):
+        SimRequest(dt=MIN_DT / 2.0)   # below floor
+
+    with pytest.raises(PydanticValidationError):
+        SimRequest(speed=MAX_SPEED + 1.0)   # exceeds cap
+
+
+def test_simulation_max_steps_guard():
+    """
+    TimeSimulationService.run() must emit an ERROR frame and stop immediately
+    when (tf / dt) > MAX_STEPS, without entering the Newmark loop.
+    """
+    import asyncio
+    from sim_app.services import TimeSimulationService, MAX_STEPS
+    from sim_app.services import StructureFactory
+
+    d = _make_valid_model_req_dict(dofs=1)
+    model = StructureFactory.create_shear_building(d)
+
+    dt = 1e-4           # MIN_DT
+    tf = (MAX_STEPS + 1) * dt   # one step over the limit
+
+    payload = {"tf": tf, "dt": dt, "t0": 0.0, "speed": 1.0}
+
+    async def collect():
+        frames = []
+        async for frame in TimeSimulationService().run(model, payload):
+            frames.append(frame)
+        return frames
+
+    frames = asyncio.run(collect())
+
+    error_frames = [f for f in frames if f.get("type") == "ERROR"]
+    assert len(error_frames) >= 1, "Expected at least one ERROR frame when exceeding MAX_STEPS"
+
+    # Must not contain any DATA frames — the loop must not have run
+    data_frames = [f for f in frames if f.get("type") == "DATA"]
+    assert len(data_frames) == 0, (
+        f"Found {len(data_frames)} DATA frame(s); Newmark loop should not have started"
+    )
