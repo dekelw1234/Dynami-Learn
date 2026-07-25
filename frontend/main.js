@@ -113,7 +113,7 @@ function renderPropertiesInputs() {
         const row = document.createElement('div');
         row.style.marginBottom = "4px";
         row.innerHTML = `
-            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#94a3b8;">
+            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:var(--text-muted);">
                 <span style="width:20px;">F${floorNum}:</span>
                 <div class="input-group" style="flex:1">
                     <input type="range" id="slide-M-${i}" min="10" max="200" value="${val}" oninput="syncProp('M', ${i}, true)">
@@ -137,7 +137,7 @@ function renderPropertiesInputs() {
         const row = document.createElement('div');
         row.style.marginBottom = "4px";
         row.innerHTML = `
-            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#94a3b8;">
+            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:var(--text-muted);">
                 <span style="width:20px;">F${floorNum}:</span>
                 <div class="input-group" style="flex:1">
                     <input type="range" id="slide-E-${i}" min="10" max="50" value="${val}" oninput="syncProp('E', ${i}, true)">
@@ -161,7 +161,7 @@ function renderPropertiesInputs() {
         const row = document.createElement('div');
         row.style.marginBottom = "4px";
         row.innerHTML = `
-            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#94a3b8;">
+            <div style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:var(--text-muted);">
                 <span style="width:20px;">F${floorNum}:</span>
                 <div class="input-group" style="flex:1">
                     <input type="range" id="slide-Hc-${i}" min="2" max="6" step="0.1" value="${val}" oninput="syncProp('Hc', ${i}, true)">
@@ -523,8 +523,8 @@ async function toggleSimulation() {
             const calcBtn = document.querySelector('.calc-btn');
             // Visually activate the Calculate Matrices button
             if (calcBtn) {
-                calcBtn.style.background = '#f59e0b';
-                calcBtn.style.color = '#000';
+                calcBtn.style.background = 'var(--gold)';
+                calcBtn.style.color = 'var(--bg)';
                 calcBtn.innerText = 'Calculating...';
             }
             btn.innerText = "Calculating...";
@@ -742,8 +742,7 @@ async function calculateSystem() {
             data.frequencies.forEach((w, i) => {
                 const freqHz = w / (2 * Math.PI);
                 const btn = document.createElement('button');
-                btn.className = 'action-btn';
-                btn.style.cssText = "font-size:0.7rem; padding:2px 6px; flex:1; background:#0f172a; border-color:#38bdf8; color:#38bdf8;";
+                btn.className = 'action-btn mode-preset-btn';
                 btn.innerText = `Set M${i+1} (${freqHz.toFixed(2)})`;
                 btn.onclick = () => setFreqFromMode(freqHz, w);
                 presetsDiv.appendChild(btn);
@@ -757,7 +756,7 @@ async function calculateSystem() {
             h+=`<tr>
                     <td>${i+1}</td>
                     <td>${freqHz.toFixed(3)} Hz</td>
-                    <td style="color:#38bdf8">${(2*Math.PI/w).toFixed(3)}s</td>
+                    <td style="color:var(--accent)">${(2*Math.PI/w).toFixed(3)}s</td>
                     <td><button class="action-btn" style="font-size:0.7rem; padding:1px 4px; height:auto; min-height:0;" onclick="setFreqFromMode(${freqHz}, ${w})">Set</button></td>
                 </tr>`;
         });
@@ -828,14 +827,14 @@ function drawFrame(disps) {
         const xTop = disps[i] * sX;
         const halfW = buildWidth/2;
 
-        ctx.strokeStyle = "#38bdf8";
+        ctx.strokeStyle = "#86B893";
         ctx.beginPath(); ctx.moveTo(cx - halfW + xB, yB); ctx.lineTo(cx - halfW + xTop, yT); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx + halfW + xB, yB); ctx.lineTo(cx + halfW + xTop, yT); ctx.stroke();
 
         ctx.strokeStyle = "#fff";
         ctx.beginPath(); ctx.moveTo(cx - halfW + xTop, yT); ctx.lineTo(cx + halfW + xTop, yT); ctx.stroke();
 
-        ctx.fillStyle = "#ef4444";
+        ctx.fillStyle = "#C1666B";
         ctx.beginPath(); ctx.arc(cx + xTop, yT, 6, 0, 6.28); ctx.fill();
 
         ctx.fillStyle = "#ffffff";
@@ -938,14 +937,14 @@ function invalidateResults() {
     msgDiv.style.marginTop = "15px";
     msgDiv.style.padding = "10px";
     msgDiv.style.textAlign = "center";
-    msgDiv.style.color = "#f59e0b";
-    msgDiv.style.border = "1px dashed #f59e0b";
+    msgDiv.style.color = "var(--gold)";
+    msgDiv.style.border = "1px dashed var(--gold)";
     msgDiv.style.borderRadius = "4px";
-    msgDiv.style.backgroundColor = "rgba(245, 158, 11, 0.1)"; // רקע כתום שקוף
+    msgDiv.style.backgroundColor = "rgba(201, 162, 39, 0.08)";
     msgDiv.innerHTML = `
         ⚠ <b>Parameters changed</b><br>
         Results above are outdated.<br>
-        Press <b style="color:#38bdf8">CALCULATE MATRICES</b> to update.
+        Press <b style="color:var(--accent)">CALCULATE MATRICES</b> to update.
     `;
 
     // 4. הוספה לסוף הרשימה

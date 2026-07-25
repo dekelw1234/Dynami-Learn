@@ -8,13 +8,34 @@
 
     <style>
         :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --accent: #38bdf8;
-            --text: #f8fafc;
-            --danger: #ef4444;
-            --info: #f59e0b;
-            --success: #10b981;
+            --bg:                  #10160F;
+            --bg-strip:            #0B0F0B;
+            --panel:               #171F19;
+            --panel-alt:           #1C251E;
+            --border:              #2A362D;
+            --border-soft:         #212B23;
+            --text:                #ECEBE3;
+            --text-muted:          #8FA091;
+            --text-dim:            #64766A;
+            --accent:              #86B893;
+            --accent-strong:       #3E7C59;
+            --accent-strong-hover: #4B9169;
+            --gold:                #C9A227;
+            --gold-hover:          #DBB748;
+            --success:             #6FAE7C;
+            --warning:             #D4A857;
+            --danger:              #C1666B;
+            --canvas-bg:           #0A0F0A;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #EEF1EA; --bg-strip: #E4E9DF; --panel: #FFFFFF; --panel-alt: #F4F6F1;
+                --border: #D6DCCF; --border-soft: #E1E6DA; --text: #1B231D; --text-muted: #57685A;
+                --text-dim: #8B9A8D; --accent: #2F6B4A; --accent-strong: #2F6B4A;
+                --accent-strong-hover: #255A3D; --gold: #8A6A16; --gold-hover: #715614;
+                --success: #3F8557; --warning: #9C7A1F; --danger: #A14A44; --canvas-bg: #E4E9DF;
+            }
         }
 
         html { font-size: 14px; }
@@ -33,8 +54,8 @@
 
         aside {
             width: 320px;
-            background: #0b1120;
-            border-right: 1px solid #334155;
+            background: var(--bg-strip);
+            border-right: 1px solid var(--border);
             padding: 0.6rem;
             display: flex;
             flex-direction: column;
@@ -46,7 +67,7 @@
             transition: 0.3s;
         }
 
-        h1 { margin: 0; color: var(--accent); font-size: 1.2rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 0.2rem; text-transform: uppercase; }
+        h1 { margin: 0; color: var(--accent); font-size: 1.2rem; text-align: center; letter-spacing: 1px; font-weight: 800; margin-bottom: 0.2rem; text-transform: uppercase; font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif; }
 
         .tools-row {
             display: flex;
@@ -54,16 +75,16 @@
             align-items: center;
             margin-bottom: 5px;
             padding-bottom: 5px;
-            border-bottom: 1px dashed #334155;
+            border-bottom: 1px dashed var(--border);
             gap: 10px;
         }
 
         .font-group { display: flex; gap: 2px; }
 
         .tool-btn {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #94a3b8;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 4px;
@@ -74,7 +95,7 @@
             align-items: center;
             justify-content: center;
         }
-        .tool-btn:hover { background: #334155; color: #fff; border-color: #64748b; }
+        .tool-btn:hover { background: var(--border); color: var(--text); border-color: var(--text-dim); }
         .fs-icon-btn { padding: 4px 10px; color: var(--accent); }
 
         #inputs-area { display: flex; flex-direction: column; gap: 0.4rem; position: relative; flex: 1; }
@@ -86,8 +107,8 @@
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.98);
-            border: 1px solid var(--info); color: var(--info);
+            background: rgba(16, 22, 15, 0.98);
+            border: 1px solid var(--gold); color: var(--gold);
             padding: 1rem; border-radius: 8px;
             font-size: 0.9rem; font-weight: 600; text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.9);
@@ -102,78 +123,81 @@
 
         #controls-area {
             margin-top: auto;
-            background: #1e293b;
+            background: var(--panel);
             padding: 0.6rem;
             border-radius: 6px;
-            border: 1px solid #334155;
+            border: 1px solid var(--border);
             display: flex;
             gap: 0.4rem;
             align-items: center;
             flex-shrink: 0;
         }
 
-        .section { background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 4px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 0.4rem; }
-        .section-title { font-size: 0.75rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #334155; padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+        .section { background: var(--panel-alt); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.4rem; }
+        .section-title { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 2px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
         .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; line-height: 1.2; }
         .input-group { display: flex; gap: 0.3rem; align-items: center; }
 
-        input[type="range"] { flex: 1; height: 4px; background: #334155; border-radius: 2px; appearance: none; cursor: pointer; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-        input[type="number"] { width: 4.5em; background: #0f172a; color: var(--accent); border: 1px solid #334155; padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
-        select { background:#0f172a; color:white; border:1px solid #334155; border-radius:3px; padding: 3px; font-size:0.8rem; width: 100%; }
+        input[type="range"] { flex: 1; height: 4px; background: var(--border); border-radius: 2px; appearance: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent-strong); border-radius: 50%; cursor: pointer; }
+        input[type="number"] { width: 4.5em; background: var(--bg); color: var(--accent); border: 1px solid var(--border); padding: 2px; border-radius: 3px; text-align: center; font-family: monospace; font-weight: bold; font-size: 0.8rem; }
+        select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 3px; font-size: 0.8rem; width: 100%; }
         select:disabled { opacity: 0.5; cursor: not-allowed; }
 
         button.action-btn {
             padding: 6px 12px;
-            border: none; border-radius: 4px;
+            border-radius: 4px;
             font-weight: bold; cursor: pointer; transition: 0.2s;
             text-transform: uppercase; font-size: 0.75rem;
-            background: #334155; color: #fff; border: 1px solid #475569;
+            background: var(--border); color: var(--text); border: 1px solid var(--text-dim);
             min-height: 28px;
         }
-        button.action-btn:hover { background: #475569; }
-        button.calc-btn { background: #0ea5e9; color: #fff; border: none; width: 100%; display: block; margin-top: 0; }
-        button.calc-btn:hover { background: #0284c7; }
-        button.start-btn { background: #10b981; border: none; flex: 1; }
-        button.start-btn:hover { background: #059669; }
-        button.start-btn.running { background: #ef4444; }
-        button.start-btn.paused { background: #f59e0b; }
-        button.reset-btn { background: #475569; max-width: 60px; }
+        button.action-btn:hover { background: var(--text-dim); }
+        button.calc-btn { background: var(--accent-strong); color: #fff; border: none; width: 100%; display: block; margin-top: 0; }
+        button.calc-btn:hover { background: var(--accent-strong-hover); }
+        button.start-btn { background: var(--success); color: #fff; border: none; flex: 1; }
+        button.start-btn:hover { background: var(--accent-strong); }
+        button.start-btn.running { background: var(--danger); }
+        button.start-btn.paused { background: var(--gold); }
+        button.reset-btn { background: var(--text-dim); max-width: 60px; }
 
-        .credit-footer { margin-top: 5px; padding-top: 5px; font-size: 0.7rem; color: #64748b; text-align: center; border-top: 1px solid #334155; line-height: 1.4; }
+        /* Mode-preset buttons injected by JS — picks up accent-strong palette */
+        .mode-preset-btn { font-size: 0.7rem; padding: 2px 6px; flex: 1; background: var(--bg); border-color: var(--accent-strong); color: var(--accent-strong); }
+
+        .credit-footer { margin-top: 5px; padding-top: 5px; font-size: 0.7rem; color: var(--text-dim); text-align: center; border-top: 1px solid var(--border); line-height: 1.4; }
 
         main { flex: 1; padding: 0.6rem; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 50% 50%; gap: 0.6rem; overflow: hidden; }
-        .card { background: var(--panel); border: 1px solid #334155; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .card-header { background: rgba(0,0,0,0.2); padding: 0 0.6rem; font-size: 0.8rem; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 600; display: flex; justify-content: space-between; align-items: center; min-height: 32px; flex-shrink: 0; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .card-header { background: rgba(0,0,0,0.2); padding: 0 0.6rem; font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; min-height: 32px; flex-shrink: 0; }
         .card-body { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .card-footer { padding: 0.4rem; border-top: 1px solid #334155; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+        .card-footer { padding: 0.4rem; border-top: 1px solid var(--border); background: rgba(0,0,0,0.1); flex-shrink: 0; }
 
-        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.9rem; padding: 0.6rem; color: #cbd5e1; line-height: 1.5; overflow: auto; flex: 1; }
+        .matrix-container { font-family: 'Consolas', monospace; font-size: 0.9rem; padding: 0.6rem; color: var(--text); line-height: 1.5; overflow: auto; flex: 1; }
         .modes-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
-        .modes-table th { text-align: left; color: #64748b; font-size: 0.8rem; border-bottom: 1px solid #334155; padding: 4px; }
-        .modes-table td { padding: 4px; border-bottom: 1px solid #1e293b; font-size: 0.85rem; }
-        .mat-label { color: #94a3b8; font-weight: bold; margin-top: 0.5rem; display: block; font-size: 0.8rem; }
+        .modes-table th { text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--border); padding: 4px; }
+        .modes-table td { padding: 4px; border-bottom: 1px solid var(--border-soft); font-size: 0.85rem; }
+        .mat-label { color: var(--text-muted); font-weight: bold; margin-top: 0.5rem; display: block; font-size: 0.8rem; }
         .mat-row { display: flex; gap: 0.5rem; font-size: 0.9rem; color: var(--accent); white-space: nowrap; }
 
         .tabs-header { display: flex; flex: 1; overflow-x: auto; height: 100%; }
-        .tab-btn { padding: 0 12px; height: 100%; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid #334155; transition: 0.2s; white-space: nowrap; }
-        .tab-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
-        .tab-btn.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-bottom: 2px solid var(--accent); }
+        .tab-btn { padding: 0 12px; height: 100%; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.75rem; font-weight: 600; border-right: 1px solid var(--border); transition: 0.2s; white-space: nowrap; }
+        .tab-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .tab-btn.active { background: rgba(201, 162, 39, 0.12); color: var(--gold); border-bottom: 2px solid var(--gold); }
         .tab-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; visibility: hidden; pointer-events: none; }
         .tab-content.active { visibility: visible; pointer-events: auto; }
         .chart-container { position: relative; width: 100%; height: 100%; }
         #vizCanvas { width: 100% !important; height: 100% !important; display: block; }
         .legend-row { display: flex; gap: 0.6rem; font-size: 0.75rem; align-items: center; }
-        .graph-scroll-container { height: 20px; background: #0b1120; border-top: 1px solid #334155; display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
+        .graph-scroll-container { height: 20px; background: var(--bg-strip); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 5px; flex-shrink: 0; }
         #time-slider { width: 100%; cursor: pointer; height: 4px; }
 
-        .info-btn { background: transparent; color: var(--info); border: 1px solid var(--info); border-radius: 50%; width: 14px; height: 14px; font-size: 10px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 3px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
-        .info-btn:hover { background: var(--info); color: #000; opacity: 1; }
+        .info-btn { background: transparent; color: var(--gold); border: 1px solid var(--gold); border-radius: 50%; width: 14px; height: 14px; font-size: 10px; font-family: serif; font-weight: bold; font-style: italic; cursor: pointer; margin-left: 3px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
+        .info-btn:hover { background: var(--gold); color: #000; opacity: 1; }
 
-        .info-tooltip { position: absolute; background: rgba(15, 23, 42, 0.98); border: 1px solid var(--accent); border-left: 3px solid var(--info); color: var(--text); padding: 0; border-radius: 4px; font-size: 0.85rem; z-index: 20000; width: 260px; box-shadow: 0 10px 30px rgba(0,0,0,0.95); animation: popIn 0.2s ease-out; display: flex; flex-direction: column; }
-        .tooltip-header { background: rgba(255,255,255,0.05); padding: 0.5rem; cursor: move; font-weight: bold; font-size: 0.9rem; color: var(--info); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .info-tooltip { position: absolute; background: rgba(16, 22, 15, 0.98); border: 1px solid var(--accent); border-left: 3px solid var(--gold); color: var(--text); padding: 0; border-radius: 4px; font-size: 0.85rem; z-index: 20000; width: 260px; box-shadow: 0 10px 30px rgba(0,0,0,0.95); animation: popIn 0.2s ease-out; display: flex; flex-direction: column; }
+        .tooltip-header { background: rgba(255,255,255,0.05); padding: 0.5rem; cursor: move; font-weight: bold; font-size: 0.9rem; color: var(--gold); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; user-select: none; }
         .tooltip-content { padding: 0.6rem; line-height: 1.5; white-space: pre-wrap; }
-        .tooltip-close { background: transparent; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; padding: 0 4px;}
+        .tooltip-close { background: transparent; border: none; color: var(--danger); font-weight: bold; font-size: 14px; cursor: pointer; padding: 0 4px; }
         .tooltip-close:hover { transform: scale(1.1); }
         @keyframes popIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
 
@@ -185,7 +209,7 @@
 
         @media (max-width: 900px) {
             body { flex-direction: column; height: auto; overflow: auto; }
-            aside { width: 100%; height: auto; max-height: 45vh; border-right: none; border-bottom: 2px solid #334155; box-sizing: border-box; }
+            aside { width: 100%; height: auto; max-height: 45vh; border-right: none; border-bottom: 2px solid var(--border); box-sizing: border-box; }
             main { display: flex; flex-direction: column; gap: 10px; height: auto; overflow: visible; padding-bottom: 40px; }
             .card { min-height: 300px; width: 100%; }
             .card[style*="grid-column: span 2;"] { grid-column: auto !important; }
@@ -217,7 +241,7 @@
 
             <div id="dynamic-properties"></div>
 
-            <div class="label-row" style="border-top:1px dashed #334155; padding-top:4px; margin-top:6px;">
+            <div class="label-row" style="border-top:1px dashed var(--border); padding-top:4px; margin-top:6px;">
                 <label>Profile:</label>
                 <select id="profile-type" onchange="updateProfileType()" style="width: auto;">
                     <option value="circle">Circular</option>
@@ -225,7 +249,7 @@
                 </select>
             </div>
             <div id="geo-inputs"></div>
-            <div style="font-size:0.7rem; color:#64748b; margin-top: -2px;">Ic: <span id="val-Ic">...</span> m⁴</div>
+            <div style="font-size:0.7rem; color:var(--text-dim); margin-top: -2px;">Ic: <span id="val-Ic">...</span> m⁴</div>
         </div>
 
         <div class="section">
@@ -243,7 +267,7 @@
             </div>
             <div id="dur-box" style="margin-bottom:2px;"><div class="label-row"><label>Duration (s):</label></div><div class="input-group"><input type="range" id="slide-dur" min="0.5" max="30" step="0.1" value="2" oninput="syncInputs('dur', true)"><input type="number" id="num-dur" value="2" min="0.1" max="50" oninput="syncInputs('dur', false)" onchange="validateInput('dur')"></div></div>
 
-            <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--info); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
+            <div class="label-row"><label>Freq (Hz): <span id="val-w" style="color:var(--gold); font-size:0.65rem;"></span> <button class="info-btn" onclick="showTooltip('freq', event)">i</button></label></div>
 
             <div id="mode-presets" style="display:flex; gap:4px; margin-bottom:6px; flex-wrap:wrap; min-height:20px;"></div>
 
@@ -255,7 +279,7 @@
     </div>
 
     <div id="controls-area">
-        <select id="sim-speed" style="width:65px; height:28px; font-weight:bold; color:var(--info); background:#0f172a; border:1px solid #475569; border-radius:4px; padding:0 4px; margin-right:auto;">
+        <select id="sim-speed" style="width:65px; height:28px; font-weight:bold; color:var(--gold); background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:0 4px; margin-right:auto;">
             <option value="0.25">0.25x</option>
             <option value="0.5">0.5x</option>
             <option value="0.75">0.75x</option>
@@ -273,7 +297,7 @@
     </div>
 </aside>
 <main>
-    <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:#000; padding:0;"><canvas id="vizCanvas"></canvas></div></div>
+    <div class="card"><div class="card-header">VISUALIZER</div><div class="card-body" style="background:var(--canvas-bg); padding:0;"><canvas id="vizCanvas"></canvas></div></div>
     <div class="card">
         <div class="card-header">SYSTEM PROPERTIES</div>
         <div class="card-body matrix-container" id="results-area">System not calculated yet.</div>
@@ -283,9 +307,9 @@
         <div class="card-header" style="padding:0; padding-right:10px;">
             <div id="tabs-header" class="tabs-header"></div>
             <div class="legend-row">
-                <label class="legend-item" style="color:#38bdf8"><input type="checkbox" id="chk-x" checked onchange="updateGraphVisibility()"> Disp [m]</label>
-                <label class="legend-item" style="color:#10b981"><input type="checkbox" id="chk-v" checked onchange="updateGraphVisibility()"> Vel [m/s]</label>
-                <label class="legend-item" style="color:#f59e0b"><input type="checkbox" id="chk-a" checked onchange="updateGraphVisibility()"> Acc [m/s²]</label>
+                <label class="legend-item" style="color:var(--accent)"><input type="checkbox" id="chk-x" checked onchange="updateGraphVisibility()"> Disp [m]</label>
+                <label class="legend-item" style="color:var(--success)"><input type="checkbox" id="chk-v" checked onchange="updateGraphVisibility()"> Vel [m/s]</label>
+                <label class="legend-item" style="color:var(--gold)"><input type="checkbox" id="chk-a" checked onchange="updateGraphVisibility()"> Acc [m/s²]</label>
             </div>
         </div>
         <div id="tabs-body" class="card-body" style="padding:0; border-bottom: none;"></div>
