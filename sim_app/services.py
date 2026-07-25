@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import sys
 import numpy as np
 from sim_core.structures import SingleDOF, ShearBuilding
 from sim_core.modal import ModalAnalyzer
@@ -155,8 +156,12 @@ class TimeSimulationService:
         # Batch just enough steps per sleep to clear the floor — no more,
         # or slower speeds (already above the floor) get a stutter of
         # several instant updates followed by an oversized pause instead of
-        # smooth per-step delivery.
-        SLEEP_BATCH = max(1, math.ceil(0.016 / sleep_interval))
+        # smooth per-step delivery. Linux/Render doesn't have this floor, so
+        # batching there would be pure downside — leave it unbatched.
+        if sys.platform == "win32":
+            SLEEP_BATCH = max(1, math.ceil(0.016 / sleep_interval))
+        else:
+            SLEEP_BATCH = 1
         steps_since_sleep = 0
 
         while t < end_time:
