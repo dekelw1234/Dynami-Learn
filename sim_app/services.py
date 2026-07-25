@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from sim_core.structures import SingleDOF, ShearBuilding
 from sim_core.modal import ModalAnalyzer
+from sim_core.matrices import caughey_damping
 from sim_core.earthquakes import get_earthquake_force
 import asyncio
 
@@ -92,25 +93,13 @@ class TimeSimulationService:
 
         a = np.zeros(dofs)
 
-        # 3. חישוב ריסון
-        zeta_vec = payload.get("damping_ratios", [0.0] * dofs)
-        zeta_val = float(zeta_vec[0]) if zeta_vec else 0.02
+        # 3. Damping matrix (Caughey modal superposition — exact per-mode zeta)
+        zeta_vec = payload.get("damping_ratios", [0.02])
 
         modal = ModalAnalyzer(model).run()
         w = modal.frequencies
 
-        # הגנה למקרה שיש רק מוד אחד
-        w1 = w[0]
-        w2 = w[1] if len(w) > 1 else w[0] * 3
-
-        A_mat = np.array([[1 / (2 * w1), w1 / 2], [1 / (2 * w2), w2 / 2]])
-        b_vec = np.array([zeta_val, zeta_val])
-        try:
-            alpha, beta = np.linalg.solve(A_mat, b_vec)
-        except:
-            alpha, beta = 0.0, 0.0
-
-        model.C = alpha * model.M + beta * model.K
+        model.C = caughey_damping(model.M, model.K, zeta_vec)
         M, K, C = model.M, model.K, model.C
 
         # 4. כוח

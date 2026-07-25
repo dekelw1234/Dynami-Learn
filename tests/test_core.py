@@ -10,7 +10,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from sim_core.structures import SingleDOF, ShearBuilding
-from sim_core.matrices import mass_matrix_lumped, stiffness_shear_structure
+from sim_core.matrices import mass_matrix_lumped, stiffness_shear_structure, caughey_damping
 from sim_core.modal import ModalAnalyzer
 from sim_core.response import TimeIntegrator
 from sim_core.earthquakes import get_el_centro_record, get_earthquake_force
@@ -556,4 +556,84 @@ def test_earthquake_record_interpolation():
     F_scale2 = get_earthquake_force(t=t_peak, M=M, scaling_factor=2.0)
     assert np.isclose(F_scale2[0], 2.0 * F_peak[0], rtol=1e-6), (
         f"scale=2 force {F_scale2[0]:.4f} ≠ 2 × scale=1 force {F_peak[0]:.4f}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# New tests: Caughey damping
+# ---------------------------------------------------------------------------
+
+def test_caughey_damping_exact_per_mode_zeta():
+    """
+    Caughey damping must recover the requested zeta in EVERY mode, not just the
+    first two.  Rayleigh damping fails this: its parabola overshoots the target
+    for any mode outside the two calibration frequencies.
+
+    Verified property for each mode i:
+        phi_i^T @ C @ phi_i / (2 * w_n[i] * modal_mass_i)  ==  zeta[i]
+
+    Tests:
+    1. Uniform zeta broadcast from a scalar  (all modes same target)
+    2. Distinct per-mode zeta list           (exercises the per-mode logic)
+    3. Short zeta list broadcast             (last value filled for extra modes)
+    4. Symmetry of C
+    """
+    dofs = 3
+    building = ShearBuilding.from_floor_data(
+        Hc=np.full((dofs, 2), 3.0),
+        Ec=np.full((dofs, 2), 30e9),
+        Ic=np.full((dofs, 2), 0.2),
+        Lb=np.full((dofs, 2), 5.0),
+        depth=6.0,
+        floor_mass=50_000.0,
+        base_condition=1,
+    )
+    M, K = building.M, building.K
+    modal = ModalAnalyzer(building).run()
+    w_n = modal.frequencies
+    PHI = np.real(modal.modes)
+
+    def check_zeta(C, zeta_expected):
+        for i in range(dofs):
+            phi_i = PHI[:, i]
+            m_i = float(phi_i @ M @ phi_i)
+            zeta_i = (phi_i @ C @ phi_i) / (2.0 * w_n[i] * m_i)
+            assert np.isclose(zeta_i, zeta_expected[i], rtol=1e-8), (
+                f"Mode {i + 1}: got zeta={zeta_i:.10f}, expected {zeta_expected[i]}"
+            )
+
+    # 1. Uniform zeta via scalar broadcast
+    zeta_scalar = 0.05
+    C1 = caughey_damping(M, K, zeta_scalar)
+    check_zeta(C1, [zeta_scalar] * dofs)
+    assert np.allclose(C1, C1.T, atol=1e-10), "C must be symmetric"
+
+    # 2. Distinct per-mode zeta — mode 3 has a different target than modes 1-2,
+    #    the case that would fail with Rayleigh damping
+    zeta_list = [0.02, 0.05, 0.10]
+    C2 = caughey_damping(M, K, zeta_list)
+    check_zeta(C2, zeta_list)
+    assert np.allclose(C2, C2.T, atol=1e-10), "C must be symmetric"
+
+    # 3. Short list broadcast (only 1 value supplied; modes 2 and 3 inherit it)
+    zeta_short = [0.03]
+    C3 = caughey_damping(M, K, zeta_short)
+    check_zeta(C3, [0.03, 0.03, 0.03])
+
+
+def test_caughey_damping_sdof_matches_classical():
+    """
+    For a SDOF system, Caughey C must equal the classical formula c = 2*zeta*w_n*m.
+    This is the ground-truth limit case.
+    """
+    m, k, zeta = 5_000.0, 2e6, 0.07
+    M = np.array([[m]])
+    K = np.array([[k]])
+    w_n = np.sqrt(k / m)
+
+    C = caughey_damping(M, K, zeta)
+
+    c_classical = 2.0 * zeta * w_n * m
+    assert np.isclose(C[0, 0], c_classical, rtol=1e-10), (
+        f"SDOF Caughey C={C[0,0]:.6f}, classical c={c_classical:.6f}"
     )

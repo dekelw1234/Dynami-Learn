@@ -27,6 +27,55 @@ def mass_matrix_lumped(dofs: int,
     return M
 
 
+def caughey_damping(M: np.ndarray, K: np.ndarray, zeta) -> np.ndarray:
+    """
+    Classical Caughey modal-superposition damping matrix (port of caugheydamping.m).
+
+    Exact per-mode damping: for every mode i,
+        phi_i^T @ C @ phi_i  ==  2 * zeta[i] * w_n[i] * (phi_i^T @ M @ phi_i)
+
+    Unlike Rayleigh damping (which only hits the target at the two chosen frequencies),
+    this guarantees the requested zeta in ALL modes.
+
+    Parameters
+    ----------
+    M    : (n, n) mass matrix (diagonal, positive-definite)
+    K    : (n, n) stiffness matrix (symmetric, positive-definite)
+    zeta : scalar or sequence
+        Target modal damping ratio per mode.  If fewer values are supplied than
+        there are DOFs, the last value is broadcast to fill the remaining modes
+        (matches MATLAB main.m: zeta = 0.02 * ones(1, DOFs)).
+
+    Returns
+    -------
+    C : (n, n) symmetric damping matrix  C = M * C_modal * M
+    """
+    # Deferred imports break the circular chain: matrices <- structures <- modal <- matrices
+    from .modal import ModalAnalyzer
+    from .structures import StructureModel
+
+    n = M.shape[0]
+
+    modal = ModalAnalyzer(StructureModel(M=M, K=K)).run()
+    w_n = modal.frequencies          # (n,) rad/s, ascending
+    PHI = np.real(modal.modes)       # (n, n), columns = mode shapes
+
+    # Broadcast zeta to exactly n values
+    zeta_arr = np.atleast_1d(np.asarray(zeta, dtype=float)).ravel()
+    if zeta_arr.size < n:
+        zeta_arr = np.append(zeta_arr, np.full(n - zeta_arr.size, zeta_arr[-1]))
+    zeta_arr = zeta_arr[:n]
+
+    # C_modal = sum_i  (2 * zeta_i * w_i / m_i) * outer(phi_i, phi_i)
+    C_modal = np.zeros((n, n))
+    for i in range(n):
+        phi_i = PHI[:, i]
+        m_i = float(phi_i @ M @ phi_i)
+        C_modal += (2.0 * zeta_arr[i] * w_n[i] / m_i) * np.outer(phi_i, phi_i)
+
+    return M @ C_modal @ M
+
+
 def stiffness_shear_structure(dofs: int,
                               Hc: np.ndarray,
                               Ec: np.ndarray,
